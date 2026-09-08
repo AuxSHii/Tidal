@@ -19,7 +19,7 @@ export class PolygonConstraint
     this.polygon = polygon
   }
 
-  contains(coordinate: Coordinate): boolean {   
+  isAllowed(coordinate: Coordinate): boolean {   
     let inside = false
 
     for (
@@ -50,7 +50,7 @@ export class PolygonConstraint
       }
     }
 
-    return inside              //return true of inside false if outside
+    return !inside              //return true of inside false if outside
   }
 }
 
@@ -77,7 +77,7 @@ export function validateRouteAgainstConstraint(   //fxn to validate given route 
     )
 
     for (const coordinate of samples) {
-      if (!constraint.contains(coordinate)) {
+      if (!constraint.isAllowed(coordinate)) {
         return {
           segmentIndex,          //voilation
           coordinate,
