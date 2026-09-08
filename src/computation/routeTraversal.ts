@@ -24,8 +24,11 @@ function requireValue(        ///eroor resolver fxn
 
   return value
 }
- 
-export function positionAtDistance(  // fxn to get the posn after vessel travelede a certain dist
+
+
+//fxn to get the posn after vessel travelede a certain dist
+
+export function positionAtDistance(
   route: Route,
   distanceAlongRoute: number,
 ): RoutePosition {
@@ -35,53 +38,69 @@ export function positionAtDistance(  // fxn to get the posn after vessel travele
     )
   }
 
-  const segments = routeSegments(route)  //geting segments from route the aray
+  const segments = routeSegments(route)
 
   if (segments.length === 0) {
     throw new Error(
-      'Route must contain at least one segment',  //verify route
+      'Route must contain at least one segment',
     )
   }
 
-  let accumulatedDistance = 0    // init my accumulated Distance from zero
+  let accumulatedDistance = 0
 
   for (
-    let segmentIndex = 0;              //for every posn step in segment array
+    let segmentIndex = 0;
     segmentIndex < segments.length;
     segmentIndex++
   ) {
-    const segment = segments[segmentIndex]    //get current segment
-    const geometry = segmentGeometry(segment)  //get its dist and init bearing.
+    const segment = segments[segmentIndex]
+    const geometry = segmentGeometry(segment)
 
-    const segmentStartDistance =    //accumulate dist ,m start of segmetn on route
+    const segmentStartDistance =
       accumulatedDistance
 
-    const segmentEndDistance =  //end of segment on route
+    const segmentEndDistance =
       accumulatedDistance +
       geometry.distance
 
+    // Exact final route endpoint.
     if (
-      distanceAlongRoute <=     //found segment with requested posn
-      segmentEndDistance
+      segmentIndex === segments.length - 1 &&
+      distanceAlongRoute >= segmentEndDistance
     ) {
-      const distanceAlongSegment =  //globsl route dist --> dist rltv to this[target]segment
+      return {
+        coordinate: segment.end,
+        segmentIndex,
+        distanceAlongSegment: geometry.distance,
+        distanceAlongRoute: segmentEndDistance,
+      }
+    }
+
+    // Position lies within this segment.
+    if (
+      distanceAlongRoute >=
+        segmentStartDistance &&
+      distanceAlongRoute <
+        segmentEndDistance
+    ) {
+      const distanceAlongSegment =
         distanceAlongRoute -
         segmentStartDistance
 
-      const line = WGS84.InverseLine(  //constructin geodesic line btw this segment start to end 
+      const line = WGS84.InverseLine(
         segment.start.latitude,
         segment.start.longitude,
         segment.end.latitude,
         segment.end.longitude,
       )
 
-      const position =           //get geo posn along geodeodesic line .  
-        line.Position(distanceAlongSegment) 
+      const position =
+        line.Position(distanceAlongSegment)
 
       return {
         coordinate: {
           latitude: requireValue(
-            position.lat2,                    //return lat adn lon = route posn
+            position.lat2,
             'latitude',
           ),
           longitude: requireValue(
@@ -90,11 +109,9 @@ export function positionAtDistance(  // fxn to get the posn after vessel travele
           ),
         },
 
-        segmentIndex,   //at which segment vessel is.
-
-        distanceAlongSegment,  //dist traveled along that segment
-
-        distanceAlongRoute,   //dist along route
+        segmentIndex,
+        distanceAlongSegment,
+        distanceAlongRoute,
       }
     }
 
@@ -106,6 +123,15 @@ export function positionAtDistance(  // fxn to get the posn after vessel travele
     'Distance along route exceeds route length',
   )
 }
+
+/* 
+segment interior -> current segment
+exact waypoint -> next segment
+final endpoint -> final segment's end
+
+*/
+
+
 
 //fxn for posn at time fxn(speedprofile,route,time-t) ---> position at time-t
 import type { SpeedProfile } from '../domain/speedProfile'
