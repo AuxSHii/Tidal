@@ -3,6 +3,7 @@ import type { Coordinate } from '../domain/coordinate'
 import type { Route } from '../domain/route'
 import { routeSegments } from './routeSegments'
 import { segmentGeometry } from './segmentGeometry'
+import { routeDistance } from './route'
 
 
 const WGS84 = Geodesic.WGS84  //importing lib
@@ -144,6 +145,16 @@ export function positionAtTime(
   if (time < 0) {
     throw new Error('Time cannot be negative')
   }
+
+
+//checkin if profiles total distance matches the given rout distance!
+  const actualRouteDistance = routeDistance(route)
+  if(Math.abs(actualRouteDistance - profile.totalDistance) > 0.001)
+    {  throw new Error('route distance does not match speed profile distance',)
+  }
+
+
+
 
   if (time >= profile.totalTime) {
     return positionAtDistance(
