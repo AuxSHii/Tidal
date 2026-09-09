@@ -2,15 +2,17 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
 import type { Coordinate } from '../domain/coordinate'
 import type { GeographicConstraint } from '../domain/geographicConstraint'
 import type { MultiPolygon } from '../domain/geography/multiPolygon'
-
+import { LandSpatialIndex } from './landSpatialIndex'
 
 export class NaturalEarthLandConstraint
   implements GeographicConstraint
 {
-  private readonly land: MultiPolygon
+
+  private readonly spatialIndex: LandSpatialIndex
 
   constructor(land: MultiPolygon) {
-    this.land = land
+ 
+    this.spatialIndex = new LandSpatialIndex(land.polygons)
   }
 
   isAllowed(coordinate: Coordinate): boolean {
@@ -22,7 +24,12 @@ export class NaturalEarthLandConstraint
       ],
     }
 
-    for (const polygon of this.land.polygons) {
+    const candidates = this.spatialIndex.search(
+      coordinate.longitude,
+      coordinate.latitude,
+    )
+
+    for (const polygon of candidates) {
       const polygonFeature = {
         type: 'Feature' as const,
         properties: {},
@@ -43,12 +50,7 @@ export class NaturalEarthLandConstraint
         },
       }
 
-      if (
-        booleanPointInPolygon(
-          point,
-          polygonFeature,
-        )
-      ) {
+      if (booleanPointInPolygon(point, polygonFeature)) {
         return false
       }
     }
