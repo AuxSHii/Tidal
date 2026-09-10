@@ -63,6 +63,7 @@ export function validateRouteAgainstConstraint(   //fxn to validate given route 
   route: Route,
   constraint: GeographicConstraint,
   spacing: number,
+  stats? :{ sampleCount: number },
 ): RouteConstraintViolation | null {
   const segments = routeSegments(route)    //route-: indiv segment
 
@@ -75,6 +76,10 @@ export function validateRouteAgainstConstraint(   //fxn to validate given route 
       segments[segmentIndex],
       spacing,
     )
+
+  if(stats) {
+    stats.sampleCount += samples.length
+  }
 
     for (const coordinate of samples) {
       if (!constraint.isAllowed(coordinate)) {

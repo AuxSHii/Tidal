@@ -14,10 +14,10 @@ export interface IndexedLandPolygon {
 
 //fxn(polygons) --> candidate polygons + bounds
 function boundingBox(polygon: Polygon): IndexedLandPolygon {
-	const points = [   //array containing all co-ord of a polygon
+  const points = [   //array containing all co-ord of a polygon
       ...polygon.outer,   //unpack co-ord into new array
       ...polygon.holes.flat(),  //flat al hole array into the new arr
-	  ]
+    ]
                         //first pt encountered
     let minX = Infinity  //start the smallst lat and longtude from +inf
     let minY = Infinity
@@ -26,27 +26,30 @@ function boundingBox(polygon: Polygon): IndexedLandPolygon {
      
     
     for ( const point of points ) {   //for every co-ord in polygon
-    	minX = Math.min(minX , point.longitude) //keep min of (current smalled lon/lat with this!)
+      minX = Math.min(minX , point.longitude) //keep min of (current smalled lon/lat with this!)
         maxX = Math.max(maxX, point.longitude)
         minY = Math.min(minY , point.latitude)
         maxY = Math.max(maxY , point.latitude)
     }
 
     return {
-    	minX, minY , maxX , maxY , polygon,
+      minX, minY , maxX , maxY , polygon,
     }
 
 } 
 
 
 export class LandSpatialIndex {  //
-	private readonly index = new RBush<IndexedLandPolygon>()
-	// rbush to store bound data 
+  private readonly index = new RBush<IndexedLandPolygon>()
+  // rbush to store bound data
 
-	constructor(polygons: Polygon[]) {
-		const items = polygons.map(boundingBox)
+  private candidateCount = 0
+  //total candidate polygons returned by RBush
 
-		this.index.load(items)
+  constructor(polygons: Polygon[]) {
+    const items = polygons.map(boundingBox)
+
+    this.index.load(items)
   }
 
   search(longitude: number, latitude: number): Polygon[] {
@@ -57,6 +60,12 @@ export class LandSpatialIndex {  //
       maxY: latitude,
     })
 
+    this.candidateCount += candidates.length
+
     return candidates.map((item) => item.polygon)
+  }
+
+  getCandidateCount(): number {
+    return this.candidateCount
   }
 }
