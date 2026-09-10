@@ -103,6 +103,16 @@ export function generateNavigationGrid(
   const rows =
     Math.ceil((maxY - minY) / spacing) + 1
 
+  console.log(
+    'Navigation grid:',
+    columns,
+    'columns ×',
+    rows,
+    'rows =',
+    columns * rows,
+    'nodes',
+  )
+
   const nodes: NavigationNode[] = []
 
   for (let row = 0; row < rows; row++) {

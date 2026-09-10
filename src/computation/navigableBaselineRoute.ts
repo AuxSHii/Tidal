@@ -44,11 +44,13 @@ export function generateNavigableBaselineRoute(
   end: Coordinate,
   constraint: GeographicConstraint,
   spacing: number = 10000,
+  paddingCells: number = 5,
 ): Route | null {
   const nodes = generateNavigationGrid(
     start,
     end,
     spacing,
+    paddingCells,
   )
 
   const navigableNodes = filterNavigableNodes(

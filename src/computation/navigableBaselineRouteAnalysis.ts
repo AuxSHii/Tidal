@@ -17,6 +17,7 @@ export function evaluateNavigableBaselineRoute(
   vessel: Vessel,
   constraint: GeographicConstraint,
   spacing: number = 10000,
+  paddingCells: number = 5,
 ): NavigableBaselineRouteAnalysis | null {
   const route =
     generateNavigableBaselineRoute(
@@ -24,6 +25,7 @@ export function evaluateNavigableBaselineRoute(
       end,
       constraint,
       spacing,
+      paddingCells,
     )
 
   if (route === null) {
