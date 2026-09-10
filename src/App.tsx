@@ -1,330 +1,148 @@
-import { useEffect } from 'react'
-import { fetchNaturalEarthLand } from './computation/naturalEarthLoader'
-import { NaturalEarthLandConstraint } from './computation/naturalEarthConstraint'
-import { evaluateBaselineRoute } from './computation/baselineRouteEvaluation'
-import { generateNavigableBaselineRoute } from './computation/navigableBaselineRoute'
-import { validateRouteAgainstConstraint } from './computation/geographicConstraint'
-import { routeDistance } from './computation/route'
-import type { Polygon } from './domain/geography/polygon'
-
-interface PolygonBounds {
-  minLongitude: number
-  maxLongitude: number
-  minLatitude: number
-  maxLatitude: number
-}
-
-function polygonBounds(
-  polygon: Polygon,
-): PolygonBounds {
-  let minLongitude = Infinity
-  let maxLongitude = -Infinity
-  let minLatitude = Infinity
-  let maxLatitude = -Infinity
-
-  for (const point of polygon.outer) {
-    minLongitude = Math.min(
-      minLongitude,
-      point.longitude,
-    )
-
-    maxLongitude = Math.max(
-      maxLongitude,
-      point.longitude,
-    )
-
-    minLatitude = Math.min(
-      minLatitude,
-      point.latitude,
-    )
-
-    maxLatitude = Math.max(
-      maxLatitude,
-      point.latitude,
-    )
-  }
-
-  return {
-    minLongitude,
-    maxLongitude,
-    minLatitude,
-    maxLatitude,
-  }
-}
-
-function findTestObstacle(
-  land: Awaited<
-    ReturnType<typeof fetchNaturalEarthLand>
-  >,
-  constraint: NaturalEarthLandConstraint,
-  spacing: number,
-) {
-  /*
-   * Look for a small land feature first.
-   *
-   * We deliberately avoid large continental polygons here.
-   * The purpose of this diagnostic is to create a small,
-   * manageable obstacle that our current grid can route around.
-   */
-  for (const polygon of land.polygons) {
-    const bounds = polygonBounds(polygon)
-
-    const width =
-      bounds.maxLongitude -
-      bounds.minLongitude
-
-    const height =
-      bounds.maxLatitude -
-      bounds.minLatitude
-
-    /*
-     * Ignore extremely large features.
-     * These are unsuitable for our small controlled test.
-     */
-    if (
-      width < 1 ||
-      width > 5 ||
-      height > 5
-    ) {
-      continue
-    }
-
-    /*
-     * Use the middle latitude of the land feature.
-     *
-     * The endpoints are placed just outside the feature's
-     * longitude bounds, so the candidate route approaches
-     * the feature from opposite sides.
-     */
-    const latitude =
-      (bounds.minLatitude +
-        bounds.maxLatitude) /
-      2
-
-    const margin = 0.5
-
-    const start = {
-      longitude:
-        bounds.minLongitude - margin,
-      latitude,
-    }
-
-    const end = {
-      longitude:
-        bounds.maxLongitude + margin,
-      latitude,
-    }
-
-    /*
-     * Reject candidates whose endpoints are themselves
-     * on land.
-     */
-    if (!constraint.isAllowed(start)) {
-      continue
-    }
-
-    if (!constraint.isAllowed(end)) {
-      continue
-    }
-
-    /*
-     * Now ask the existing geographic validation system
-     * whether the direct geodesic actually crosses land.
-     *
-     * This is the important verification step.
-     */
-    const directResult =
-      evaluateBaselineRoute(
-        start,
-        end,
-        constraint,
-        spacing,
-      )
-
-    if (!directResult.valid) {
-      return {
-        start,
-        end,
-        directResult,
-        bounds,
-        width,
-        height,
-      }
-    }
-  }
-
-  return null
-}
+import { useState } from 'react'
+import { TidalMap } from './components/TidalMap'
 
 function App() {
-  useEffect(() => {
-    async function inspectNavigationObstacle() {
-      const spacing = 10000
-      const paddingCells = 30
+  const [
+    cursorCoordinate,
+    setCursorCoordinate,
+  ] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
 
-      const land =
-        await fetchNaturalEarthLand()
+  return (
+    <main className="tidal-app">
+      {/* TIDAL identity */}
+      <header className="tidal-header">
+        <div className="tidal-brand">
+          <div className="tidal-brand__name">
+            TIDAL
+          </div>
 
-      const constraint =
-        new NaturalEarthLandConstraint(land)
+          <div className="tidal-brand__meta">
+            Maritime navigation
+          </div>
+        </div>
+      </header>
 
-      console.log(
-        'Natural Earth polygons:',
-        land.polygons.length,
-      )
+      {/* Primary navigation environment */}
+      <section className="tidal-map">
+        <TidalMap
+          className="tidal-map__leaflet"
+          onCoordinateChange={
+            setCursorCoordinate
+          }
+        />
 
-      console.log(
-        'Searching for a small real land obstacle...',
-      )
+        {/* Geographic title */}
+        <div className="tidal-location tidal-location--ocean">
+          <div className="tidal-location__annotation">
+            <div className="tidal-label">
+              Navigation region
+            </div>
 
-      const testObstacle =
-        findTestObstacle(
-          land,
-          constraint,
-          spacing,
-        )
+            <h1 className="tidal-location__title">
+              Philippine Sea
+            </h1>
+          </div>
+        </div>
 
-      if (!testObstacle) {
-        console.log(
-          'No suitable test obstacle was found.',
-        )
+        {/* Temporary route */}
+        <div className="tidal-route">
+          <div className="tidal-route__line" />
 
-        return
-      }
-      console.log(
-        'Test obstacle found.',
-      )
+          <div className="tidal-route__origin">
+            <span className="tidal-route__marker" />
+            <span>Origin</span>
+          </div>
 
-      console.log(
-        'Obstacle bounds:',
-        testObstacle.bounds,
-      )
+          <div className="tidal-route__destination">
+            <span className="tidal-route__marker" />
+            <span>Destination</span>
+          </div>
+        </div>
 
-      console.log(
-        'Obstacle width:',
-        testObstacle.width,
-        'degrees',
-      )
+        {/* Route information */}
+        <aside className="tidal-route-card">
+          <div className="tidal-label">
+            Current route
+          </div>
 
-      console.log(
-        'Obstacle height:',
-        testObstacle.height,
-        'degrees',
-      )
+          <h2 className="tidal-route-card__title">
+            Geographic baseline
+          </h2>
 
-      console.log(
-        'Test start:',
-        testObstacle.start,
-      )
+          <div className="tidal-route-card__data">
+            <div>
+              <span className="tidal-label">
+                Status
+              </span>
 
-      console.log(
-        'Test end:',
-        testObstacle.end,
-      )
+              <span className="tidal-data">
+                Awaiting calculation
+              </span>
+            </div>
 
-      console.log(
-        'Start allowed:',
-        constraint.isAllowed(
-          testObstacle.start,
-        ),
-      )
+            <div>
+              <span className="tidal-label">
+                Grid
+              </span>
 
-      console.log(
-        'End allowed:',
-        constraint.isAllowed(
-          testObstacle.end,
-        ),
-      )
+              <span className="tidal-data">
+                10.0 KM
+              </span>
+            </div>
+          </div>
+        </aside>
 
-      console.log(
-        'Direct geodesic valid:',
-        testObstacle.directResult.valid,
-      )
+        {/* Geographic coordinate readout */}
+        <div className="tidal-coordinate">
+         
 
-      if (testObstacle.directResult.violation) {
-        console.log(
-          'Direct geodesic blocked at:',
-          testObstacle.directResult.violation.coordinate,
-        )
-      }
+          <div>
+            <div className="tidal-coordinate__label">
+              Position
+            </div>
 
-      /*
-       * Now run the actual geographic navigation pipeline.
-       *
-       * The obstacle has already been independently verified:
-       * both endpoints are ocean and the direct route crosses land.
-       */
-      console.log(
-        'Building navigable baseline route...',
-      )
+            <div className="tidal-coordinate__value">
+              {cursorCoordinate
+                ? `${Math.abs(cursorCoordinate.latitude).toFixed(4)}° ${
+                    cursorCoordinate.latitude >= 0
+                      ? 'N'
+                      : 'S'
+                  } · ${Math.abs(cursorCoordinate.longitude).toFixed(4)}° ${
+                    cursorCoordinate.longitude >= 0
+                      ? 'E'
+                      : 'W'
+                  }`
+                : 'Move cursor over map'}
+            </div>
+          </div>
+        </div>
 
-      const route =
-        generateNavigableBaselineRoute(
-          testObstacle.start,
-          testObstacle.end,
-          constraint,
-          spacing,
-          paddingCells,
-        )
+        {/* Voyage progression */}
+        <div className="tidal-leg-control">
+          <button
+            type="button"
+            aria-label="Previous stage"
+          >
+            ‹
+          </button>
 
-      if (route === null) {
-        console.log(
-          'Navigable baseline route: NOT FOUND',
-        )
+          <span className="tidal-leg-control__index">
+            01 / 04
+          </span>
 
-        return
-      }
-
-      console.log(
-        'Navigable baseline route: FOUND',
-      )
-
-      console.log(
-        'Route points:',
-        route.points.length,
-      )
-
-      /*
-       * Verify that the returned route itself
-       * remains geographically navigable.
-       */
-      const routeViolation =
-        validateRouteAgainstConstraint(
-          route,
-          constraint,
-          spacing,
-        )
-
-      console.log(
-        'Navigable baseline route valid:',
-        routeViolation === null,
-      )
-
-      if (routeViolation) {
-        console.log(
-          'Route violation at:',
-          routeViolation.coordinate,
-        )
-      }
-
-      console.log(
-        'Navigable baseline route distance:',
-        routeDistance(route),
-        'm',
-      )
-    }
-
-    inspectNavigationObstacle().catch(
-      (error) => {
-        console.error(
-          'Navigation obstacle inspection failed:',
-          error,
-        )
-      },
-    )
-  }, [])
-
-  return <div>TIDAL</div>
+          <button
+            type="button"
+            aria-label="Next stage"
+          >
+            ›
+          </button>
+        </div>
+      </section>
+    </main>
+  )
 }
 
 export default App

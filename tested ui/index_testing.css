@@ -1,0 +1,166 @@
+:root {
+  /* TIDAL environment */
+  --tidal-background: #071018;
+  --tidal-surface: #0b1720;
+  --tidal-surface-raised: #10202a;
+
+  /* TIDAL typography */
+  --tidal-text: #e7e5dc;
+  --tidal-text-muted: #8d9aa0;
+  --tidal-text-faint: #5d6b72;
+
+  /* TIDAL structure */
+  --tidal-border: rgba(190, 207, 211, 0.14);
+  --tidal-border-strong: rgba(190, 207, 211, 0.24);
+
+  /* Navigation accent */
+  --tidal-accent: #78b8b0;
+  --tidal-accent-soft: rgba(120, 184, 176, 0.16);
+
+  /* Cartographic land */
+  --tidal-land: #d8d4c8;
+
+  /* Typography roles */
+  --tidal-font-ui:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --tidal-font-data:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  --tidal-font-display:
+    Georgia,
+    "Times New Roman",
+    serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  background: var(--tidal-background);
+  color: var(--tidal-text);
+  font-family: var(--tidal-font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * TIDAL application foundation.
+ *
+ * The application is intentionally allowed to occupy
+ * the full viewport. The map will eventually become
+ * the primary visual surface.
+ */
+.tidal-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(32, 67, 79, 0.18),
+      transparent 48%
+    ),
+    var(--tidal-background);
+}
+
+/*
+ * Shared technical label.
+ *
+ * Used for small navigation and instrument labels,
+ * not for normal reading text.
+ */
+.tidal-label {
+  color: var(--tidal-text-muted);
+  font-family: var(--tidal-font-data);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/*
+ * Geographic / instrument data.
+ */
+.tidal-data {
+  color: var(--tidal-text);
+  font-family: var(--tidal-font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Editorial display text.
+ *
+ * We use this sparingly. It is part of TIDAL's
+ * exploration/cartography character rather than
+ * a replacement for the interface font.
+ */
+.tidal-display {
+  color: var(--tidal-text);
+  font-family: var(--tidal-font-display);
+  font-weight: 400;
+}
+
+/*
+ * Subtle structural divider.
+ */
+.tidal-divider {
+  border-color: var(--tidal-border);
+}
+
+/*
+ * Interactive elements should feel precise rather
+ * than like conventional rounded SaaS buttons.
+ */
+.tidal-action {
+  border: 1px solid var(--tidal-border-strong);
+  background: transparent;
+  color: var(--tidal-text);
+  cursor: pointer;
+  font-family: var(--tidal-font-data);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.tidal-action:hover {
+  border-color: rgba(120, 184, 176, 0.55);
+  background: var(--tidal-accent-soft);
+}
+
+.tidal-action:focus-visible {
+  outline: 1px solid var(--tidal-accent);
+  outline-offset: 3px;
+}
+
+/*
+ * Hide the scrollbar without disabling scrolling.
+ * Useful for the eventual full-screen navigation
+ * workspace on smaller displays.
+ */
+.tidal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 207, 211, 0.2) transparent;
+}
