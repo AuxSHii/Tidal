@@ -1,4 +1,5 @@
 import {
+  CircleMarker,
   GeoJSON,
   MapContainer,
   Polyline,
@@ -96,9 +97,8 @@ function Graticule() {
  * Tracks the geographic position beneath the pointer.
  *
  * Hovering only reports position. It does not create a custom
- * cursor or select a navigation location yet.
+ * cursor or select a navigation location.
  */
-
 function MapCoordinateTracker({
   onCoordinateChange,
 }: {
@@ -159,7 +159,52 @@ function MapCoordinateTracker({
   return null
 }
 
+/*
+ * Selects a geographic location when the map is clicked.
+ *
+ * The selected coordinate is kept locally for now.
+ * Later this will become the basis for Origin and Destination.
+ */
+function MapClickTracker({
+  onCoordinateSelect,
+}: {
+  onCoordinateSelect: (
+    coordinate: {
+      latitude: number
+      longitude: number
+    },
+  ) => void
+}) {
+  const map = useMap()
 
+  useEffect(() => {
+    function handleClick(
+      event: LeafletMouseEvent,
+    ) {
+      onCoordinateSelect({
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng,
+      })
+    }
+
+    map.on(
+      'click',
+      handleClick,
+    )
+
+    return () => {
+      map.off(
+        'click',
+        handleClick,
+      )
+    }
+  }, [
+    map,
+    onCoordinateSelect,
+  ])
+
+  return null
+}
 
 export function TidalMap({
   className,
@@ -170,9 +215,16 @@ export function TidalMap({
     setLand,
   ] = useState<FeatureCollection | null>(null)
 
+  const [
+    selectedCoordinate,
+    setSelectedCoordinate,
+  ] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
+
   useEffect(() => {
     let cancelled = false
-
     async function loadLand() {
       const response = await fetch(
         '/data/geography/natural-earth/land.geojson',
@@ -224,7 +276,31 @@ export function TidalMap({
           onCoordinateChange={
             onCoordinateChange
           }
-        />{land && (
+        />
+
+        <MapClickTracker
+          onCoordinateSelect={
+            setSelectedCoordinate
+          }
+        />
+
+        {selectedCoordinate && (
+          <CircleMarker
+            center={[
+              selectedCoordinate.latitude,
+              selectedCoordinate.longitude,
+            ]}
+            radius={5}
+            pathOptions={{
+              color: '#d9a441',
+              weight: 1,
+              fillColor: '#d9a441',
+              fillOpacity: 0.9,
+            }}
+          />
+        )}
+
+        {land && (
           <GeoJSON
             data={
               land as GeoJsonObject

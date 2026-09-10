@@ -312,39 +312,52 @@ body {
 }
 
 /*   coordinate styles   */
+
+
+
 .tidal-coordinate {
   position: absolute;
   z-index: 8;
 
-  left: 36px;
-  bottom: 34px;
+  left: 30px;
+  bottom: 30px;
 
   display: flex;
-  align-items: center;
-  gap: 11px;
+  flex-direction: column;
+  gap: 5px;
+
+  padding: 7px 10px 8px;
+
+  border-left: 2px solid var(--tidal-amber);
+
+  background: rgba(7, 21, 34, 0.48);
+  backdrop-filter: blur(4px);
 }
 
 .tidal-coordinate__label {
-  color: var(--tidal-faint);
+  color: rgba(255, 255, 255, 0.42);
 
-  font-family: var(--tidal-body-serif);
-  font-size: 0.58rem;
-  letter-spacing: 0.03em;
+  font-family: var(--tidal-mono);
+  font-size: 0.47rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  line-height: 1;
+
+  text-transform: uppercase;
 }
 
 .tidal-coordinate__value {
-  margin-top: 4px;
-
-  color: var(--tidal-muted);
+  color: rgba(255, 255, 255, 0.9);
 
   font-family: var(--tidal-mono);
-  font-size: 0.58rem;
+  font-size: 0.61rem;
   font-weight: 400;
   letter-spacing: 0.02em;
+  line-height: 1.2;
+
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-
-
 
 
 
