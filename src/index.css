@@ -359,6 +359,64 @@ body {
   white-space: nowrap;
 }
 
+/* tidal location */
+
+
+.tidal-location-tooltip.leaflet-tooltip {
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border: 1px solid rgba(217, 164, 65, 0.28) !important;
+  border-radius: 2px !important;
+
+  background: rgba(7, 21, 34, 0.88) !important;
+
+  box-shadow: none !important;
+
+  color: inherit !important;
+
+  backdrop-filter: blur(5px);
+}
+
+.tidal-location-tooltip.leaflet-tooltip-right::before {
+  display: none !important;
+}
+
+.tidal-location-tooltip__content {
+  padding: 6px 9px 7px;
+
+  border-left: 2px solid var(--tidal-amber);
+}
+
+.tidal-location-tooltip__label {
+  margin-bottom: 4px;
+
+  color: rgba(217, 164, 65, 0.78);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.43rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  line-height: 1;
+
+  text-transform: uppercase;
+}
+
+.tidal-location-tooltip__value {
+  color: rgba(255, 255, 255, 0.94) !important;
+
+  font-family: var(--tidal-mono);
+  font-size: 0.59rem;
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1.2;
+
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
+
 
 
 /* --------------------------------------------------
