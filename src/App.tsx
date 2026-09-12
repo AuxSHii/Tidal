@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+
 import { TidalMap } from './components/TidalMap'
+import type { Location } from './domain/location'
 
 function App() {
   const [
@@ -11,12 +14,55 @@ function App() {
   } | null>(null)
 
   const [
-    selectedCoordinate,
-    setSelectedCoordinate,
-  ] = useState<{
-    latitude: number
-    longitude: number
-  } | null>(null)
+    selectedLocation,
+    setSelectedLocation,
+  ] = useState<Location | null>(null)
+
+  const [
+    coordinateInput,
+    setCoordinateInput,
+  ] = useState('')
+
+  function handleCoordinateSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault()
+
+    const parts = coordinateInput
+      .split(',')
+      .map((part) => part.trim())
+
+    if (parts.length !== 2) {
+      return
+    }
+
+    const latitude = Number(parts[0])
+    const longitude = Number(parts[1])
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return
+    }
+
+    if (
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return
+    }
+
+    setSelectedLocation({
+      coordinate: {
+        latitude,
+        longitude,
+      },
+      source: 'coordinates',
+    })
+  }
 
   return (
     <main className="tidal-app">
@@ -31,6 +77,36 @@ function App() {
             Maritime navigation
           </div>
         </div>
+
+        {/* Unified geographic location input */}
+        <form
+          className="tidal-coordinate-input"
+          onSubmit={handleCoordinateSubmit}
+        >
+          <label
+            htmlFor="tidal-coordinate-field"
+            className="tidal-coordinate-input__label"
+          >
+            Location
+          </label>
+
+          <input
+            id="tidal-coordinate-field"
+            type="text"
+            value={coordinateInput}
+            onChange={(event) =>
+              setCoordinateInput(
+                event.target.value,
+              )
+            }
+            placeholder="PLACE OR LAT, LON"
+            aria-label="Search for a place or enter latitude and longitude"
+          />
+
+          <button type="submit">
+            Locate
+          </button>
+        </form>
       </header>
 
       {/* Primary navigation environment */}
@@ -40,11 +116,11 @@ function App() {
           onCoordinateChange={
             setCursorCoordinate
           }
-          selectedCoordinate={
-            selectedCoordinate
+          selectedLocation={
+            selectedLocation
           }
-          onCoordinateSelect={
-            setSelectedCoordinate
+          onLocationSelect={
+            setSelectedLocation
           }
         />
 

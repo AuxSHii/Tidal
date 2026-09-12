@@ -14,40 +14,35 @@ import type {
 import type { LeafletMouseEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useState } from 'react'
- 
+
+import type { Location } from '../domain/location'
 
 interface TidalMapProps {
   className?: string
+
   onCoordinateChange?: (
     coordinate: {
       latitude: number
       longitude: number
     } | null,
   ) => void
-  selectedCoordinate?: {
-    latitude: number
-    longitude: number
-  } | null
-  onCoordinateSelect?: (
-    coordinate: {
-      latitude: number
-      longitude: number
-    },
+
+  selectedLocation?: Location | null
+
+  onLocationSelect?: (
+    location: Location,
   ) => void
 }
 
 function MapView({
-  selectedCoordinate,
+  selectedLocation,
 }: {
-  selectedCoordinate?: {
-    latitude: number
-    longitude: number
-  } | null
+  selectedLocation?: Location | null
 }) {
   const map = useMap()
 
   useEffect(() => {
-    if (!selectedCoordinate) {
+    if (!selectedLocation) {
       map.setView(
         [7.6979, 124.0],
         5,
@@ -57,21 +52,17 @@ function MapView({
     }
 
     map.setView([
-      selectedCoordinate.latitude,
-      selectedCoordinate.longitude,
+      selectedLocation.coordinate.latitude,
+      selectedLocation.coordinate.longitude,
     ])
   }, [
     map,
-    selectedCoordinate,
+    selectedLocation,
   ])
 
   return null
 }
 
-
-
-
- 
 /*
  * Geographic reference layer.
  *
@@ -81,23 +72,31 @@ function MapView({
  */
 function Graticule() {
   const latitudeLines: [number, number][][] = []
- 
-  for (let latitude = -80; latitude <= 80; latitude += 10) {
+
+  for (
+    let latitude = -80;
+    latitude <= 80;
+    latitude += 10
+  ) {
     latitudeLines.push([
       [latitude, -180],
       [latitude, 180],
     ])
   }
- 
+
   const longitudeLines: [number, number][][] = []
- 
-  for (let longitude = -180; longitude <= 180; longitude += 10) {
+
+  for (
+    let longitude = -180;
+    longitude <= 180;
+    longitude += 10
+  ) {
     longitudeLines.push([
       [-85, longitude],
       [85, longitude],
     ])
   }
- 
+
   return (
     <>
       {latitudeLines.map((line, index) => (
@@ -105,20 +104,22 @@ function Graticule() {
           key={`latitude-${index}`}
           positions={line}
           pathOptions={{
-            color: 'rgba(0, 0, 0, 0.12)',
+            color:
+              'rgba(0, 0, 0, 0.12)',
             weight: 1,
             opacity: 0.5,
             interactive: false,
           }}
         />
       ))}
- 
+
       {longitudeLines.map((line, index) => (
         <Polyline
           key={`longitude-${index}`}
           positions={line}
           pathOptions={{
-            color: 'rgba(0, 0, 0, 0.12)',
+            color:
+              'rgba(0, 0, 0, 0.12)',
             weight: 1,
             opacity: 0.5,
             interactive: false,
@@ -128,7 +129,7 @@ function Graticule() {
     </>
   )
 }
- 
+
 /*
  * Tracks the geographic position beneath the pointer.
  *
@@ -141,47 +142,47 @@ function MapCoordinateTracker({
   onCoordinateChange?: TidalMapProps['onCoordinateChange']
 }) {
   const map = useMap()
- 
+
   useEffect(() => {
     let lastUpdate = 0
- 
+
     function handleMouseMove(
       event: LeafletMouseEvent,
     ) {
       const now = performance.now()
- 
+
       if (now - lastUpdate < 50) {
         return
       }
- 
+
       lastUpdate = now
- 
+
       onCoordinateChange?.({
         latitude: event.latlng.lat,
         longitude: event.latlng.lng,
       })
     }
- 
+
     function handleMouseOut() {
       onCoordinateChange?.(null)
     }
- 
+
     map.on(
       'mousemove',
       handleMouseMove,
     )
- 
+
     map.on(
       'mouseout',
       handleMouseOut,
     )
- 
+
     return () => {
       map.off(
         'mousemove',
         handleMouseMove,
       )
- 
+
       map.off(
         'mouseout',
         handleMouseOut,
@@ -191,43 +192,44 @@ function MapCoordinateTracker({
     map,
     onCoordinateChange,
   ])
- 
+
   return null
 }
- 
+
 /*
  * Selects a geographic location when the map is clicked.
  *
- * The selected coordinate is kept locally for now.
+ * The selected location is passed to the parent,
+ * which owns the shared location state.
  * Later this will become the basis for Origin and Destination.
  */
 function MapClickTracker({
-  onCoordinateSelect,
+  onLocationSelect,
 }: {
-  onCoordinateSelect: (
-    coordinate: {
-      latitude: number
-      longitude: number
-    },
+  onLocationSelect: (
+    location: Location,
   ) => void
 }) {
   const map = useMap()
- 
+
   useEffect(() => {
     function handleClick(
       event: LeafletMouseEvent,
     ) {
-      onCoordinateSelect({
-        latitude: event.latlng.lat,
-        longitude: event.latlng.lng,
+      onLocationSelect({
+        coordinate: {
+          latitude: event.latlng.lat,
+          longitude: event.latlng.lng,
+        },
+        source: 'map',
       })
     }
- 
+
     map.on(
       'click',
       handleClick,
     )
- 
+
     return () => {
       map.off(
         'click',
@@ -236,62 +238,57 @@ function MapClickTracker({
     }
   }, [
     map,
-    onCoordinateSelect,
+    onLocationSelect,
   ])
- 
+
   return null
 }
- 
+
 export function TidalMap({
   className,
   onCoordinateChange,
-  selectedCoordinate,
-  onCoordinateSelect,
+  selectedLocation,
+  onLocationSelect,
 }: TidalMapProps) {
-
-
-
   const [
     land,
     setLand,
   ] = useState<FeatureCollection | null>(null)
 
-
-
   useEffect(() => {
     let cancelled = false
- 
+
     async function loadLand() {
       const response = await fetch(
         '/data/geography/natural-earth/land.geojson',
       )
- 
+
       if (!response.ok) {
         throw new Error(
           `Failed to load Natural Earth land: ${response.status}`,
         )
       }
- 
+
       const data =
         (await response.json()) as FeatureCollection
- 
+
       if (!cancelled) {
         setLand(data)
       }
     }
- 
+
     loadLand().catch((error) => {
       console.error(
         'Failed to load Natural Earth land:',
         error,
       )
     })
- 
+
     return () => {
       cancelled = true
     }
   }, [])
- 
+
   return (
     <div className={className}>
       <MapContainer
@@ -305,27 +302,25 @@ export function TidalMap({
         className="tidal-leaflet-map"
       >
         <MapView
-          selectedCoordinate={
-          selectedCoordinate
+          selectedLocation={
+            selectedLocation
           }
         />
 
- 
         <Graticule />
- 
+
         <MapCoordinateTracker
           onCoordinateChange={
             onCoordinateChange
           }
         />
- 
+
         <MapClickTracker
-          onCoordinateSelect={
-            onCoordinateSelect ?? (() => {})
+          onLocationSelect={
+            onLocationSelect ?? (() => {})
           }
         />
 
- 
         {land && (
           <GeoJSON
             data={
@@ -342,63 +337,66 @@ export function TidalMap({
           />
         )}
 
+        {selectedLocation && (
+          <Pane
+            name="tidal-selection"
+            style={{
+              zIndex: 1000,
+            }}
+          >
+            <CircleMarker
+              center={[
+                selectedLocation.coordinate
+                  .latitude,
+                selectedLocation.coordinate
+                  .longitude,
+              ]}
+              radius={5}
+              pathOptions={{
+                color: '#d9a441',
+                weight: 1,
+                fillColor: '#d9a441',
+                fillOpacity: 0.9,
+              }}
+            >
+              <Tooltip
+                permanent
+                direction="right"
+                offset={[10, 0]}
+                className="tidal-location-tooltip"
+              >
+                <div className="tidal-location-tooltip__content">
+                  <div className="tidal-location-tooltip__label">
+                    Selected
+                  </div>
 
-{selectedCoordinate && (
-  <Pane
-    name="tidal-selection"
-    style={{
-      zIndex: 1000,
-    }}
-  >
-    <CircleMarker
-      center={[
-        selectedCoordinate.latitude,
-        selectedCoordinate.longitude,
-      ]}
-      radius={5}
-      pathOptions={{
-        color: '#d9a441',
-        weight: 1,
-        fillColor: '#d9a441',
-        fillOpacity: 0.9,
-      }}
-    >
-      <Tooltip
-        permanent
-        direction="right"
-        offset={[10, 0]}
-        className="tidal-location-tooltip"
-      >
-        <div className="tidal-location-tooltip__content">
-          <div className="tidal-location-tooltip__label">
-            Selected
-          </div>
-
-          <div className="tidal-location-tooltip__value">
-            {Math.abs(
-              selectedCoordinate.latitude,
-            ).toFixed(4)}
-            °{' '}
-            {selectedCoordinate.latitude >= 0
-              ? 'N'
-              : 'S'}{' '}
-            ·{' '}
-            {Math.abs(
-              selectedCoordinate.longitude,
-            ).toFixed(4)}
-            °{' '}
-            {selectedCoordinate.longitude >= 0
-              ? 'E'
-              : 'W'}
-          </div>
-        </div>
-      </Tooltip>
-    </CircleMarker>
-  </Pane>
-)}
-</MapContainer>
+                  <div className="tidal-location-tooltip__value">
+                    {Math.abs(
+                      selectedLocation
+                        .coordinate.latitude,
+                    ).toFixed(4)}
+                    °{' '}
+                    {selectedLocation
+                      .coordinate.latitude >= 0
+                      ? 'N'
+                      : 'S'}{' '}
+                    ·{' '}
+                    {Math.abs(
+                      selectedLocation
+                        .coordinate.longitude,
+                    ).toFixed(4)}
+                    °{' '}
+                    {selectedLocation
+                      .coordinate.longitude >= 0
+                      ? 'E'
+                      : 'W'}
+                  </div>
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          </Pane>
+        )}
+      </MapContainer>
     </div>
   )
 }
-
-
