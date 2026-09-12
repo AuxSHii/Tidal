@@ -15,6 +15,7 @@ import type { LeafletMouseEvent } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useState } from 'react'
  
+
 interface TidalMapProps {
   className?: string
   onCoordinateChange?: (
@@ -23,20 +24,53 @@ interface TidalMapProps {
       longitude: number
     } | null,
   ) => void
+  selectedCoordinate?: {
+    latitude: number
+    longitude: number
+  } | null
+  onCoordinateSelect?: (
+    coordinate: {
+      latitude: number
+      longitude: number
+    },
+  ) => void
 }
- 
-function MapView() {
+
+function MapView({
+  selectedCoordinate,
+}: {
+  selectedCoordinate?: {
+    latitude: number
+    longitude: number
+  } | null
+}) {
   const map = useMap()
- 
+
   useEffect(() => {
-    map.setView(
-      [7.6979, 124.0],
-      5,
-    )
-  }, [map])
- 
+    if (!selectedCoordinate) {
+      map.setView(
+        [7.6979, 124.0],
+        5,
+      )
+
+      return
+    }
+
+    map.setView([
+      selectedCoordinate.latitude,
+      selectedCoordinate.longitude,
+    ])
+  }, [
+    map,
+    selectedCoordinate,
+  ])
+
   return null
 }
+
+
+
+
  
 /*
  * Geographic reference layer.
@@ -211,20 +245,19 @@ function MapClickTracker({
 export function TidalMap({
   className,
   onCoordinateChange,
+  selectedCoordinate,
+  onCoordinateSelect,
 }: TidalMapProps) {
+
+
+
   const [
     land,
     setLand,
   ] = useState<FeatureCollection | null>(null)
- 
-  const [
-    selectedCoordinate,
-    setSelectedCoordinate,
-  ] = useState<{
-    latitude: number
-    longitude: number
-  } | null>(null)
- 
+
+
+
   useEffect(() => {
     let cancelled = false
  
@@ -271,7 +304,12 @@ export function TidalMap({
         maxZoom={10}
         className="tidal-leaflet-map"
       >
-        <MapView />
+        <MapView
+          selectedCoordinate={
+          selectedCoordinate
+          }
+        />
+
  
         <Graticule />
  
@@ -283,9 +321,10 @@ export function TidalMap({
  
         <MapClickTracker
           onCoordinateSelect={
-            setSelectedCoordinate
+            onCoordinateSelect ?? (() => {})
           }
         />
+
  
         {land && (
           <GeoJSON
@@ -361,5 +400,5 @@ export function TidalMap({
     </div>
   )
 }
- 
+
 

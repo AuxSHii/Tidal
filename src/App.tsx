@@ -10,6 +10,14 @@ function App() {
     longitude: number
   } | null>(null)
 
+  const [
+    selectedCoordinate,
+    setSelectedCoordinate,
+  ] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
+
   return (
     <main className="tidal-app">
       {/* TIDAL identity */}
@@ -31,6 +39,12 @@ function App() {
           className="tidal-map__leaflet"
           onCoordinateChange={
             setCursorCoordinate
+          }
+          selectedCoordinate={
+            selectedCoordinate
+          }
+          onCoordinateSelect={
+            setSelectedCoordinate
           }
         />
 
@@ -97,8 +111,6 @@ function App() {
 
         {/* Geographic coordinate readout */}
         <div className="tidal-coordinate">
-         
-
           <div>
             <div className="tidal-coordinate__label">
               Position
