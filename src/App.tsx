@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import type { FormEvent } from 'react'
 
 import { TidalMap } from './components/TidalMap'
 import type { Location } from './domain/location'
+import type { PlaceSearchResult } from './location/placeSearch'
+import { placeSearchService } from './location/placeSearchService'
 
 function App() {
   const [
@@ -18,50 +21,201 @@ function App() {
     setSelectedLocation,
   ] = useState<Location | null>(null)
 
+  const [origin, setOrigin] =
+    useState<Location | null>(null)
+
+  const [destination, setDestination] =
+    useState<Location | null>(null)
+
   const [
     coordinateInput,
     setCoordinateInput,
   ] = useState('')
 
-  function handleCoordinateSubmit(
+  const [
+    searchResults,
+    setSearchResults,
+  ] = useState<PlaceSearchResult[]>([])
+
+  const [
+    isSearching,
+    setIsSearching,
+  ] = useState(false)
+
+  const [
+    searchError,
+    setSearchError,
+  ] = useState<string | null>(null)
+
+
+
+
+  useEffect(() => {
+  console.log('ORIGIN STATE:', origin)
+  console.log('DESTINATION STATE:', destination)
+}, [origin, destination])
+
+
+
+
+  function handleLocationSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
 
-    const parts = coordinateInput
+    const input =
+      coordinateInput.trim()
+
+    if (!input) {
+      return
+    }
+
+    /*
+     * First try to interpret the input as
+     * latitude, longitude.
+     */
+    const parts = input
       .split(',')
       .map((part) => part.trim())
 
-    if (parts.length !== 2) {
-      return
+    if (parts.length === 2) {
+      const latitude = Number(parts[0])
+      const longitude = Number(parts[1])
+
+      if (
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180
+      ) {
+        setSearchResults([])
+        setSearchError(null)
+
+        setSelectedLocation({
+          coordinate: {
+            latitude,
+            longitude,
+          },
+          source: 'coordinates',
+        })
+
+        return
+      }
     }
 
-    const latitude = Number(parts[0])
-    const longitude = Number(parts[1])
+    /*
+     * If the input is not valid coordinates,
+     * treat it as a place search.
+     */
+    setIsSearching(true)
+    setSearchError(null)
+    setSearchResults([])
 
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
-    ) {
-      return
-    }
+    placeSearchService
+      .search(input)
+      .then((results) => {
+        setSearchResults(results)
+      })
+      .catch((error) => {
+        console.error(
+          'Failed to search for location:',
+          error,
+        )
 
-    if (
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
-      return
-    }
+        setSearchError(
+          'Unable to search for this location.',
+        )
+      })
+      .finally(() => {
+        setIsSearching(false)
+      })
+  }
 
+  /*
+   * Format coordinates shown in search results.
+   */
+  function formatCoordinate(
+    coordinate: PlaceSearchResult['coordinate'],
+  ) {
+    const latitude =
+      `${Math.abs(coordinate.latitude).toFixed(4)}° ${
+        coordinate.latitude >= 0 ? 'N' : 'S'
+      }`
+
+    const longitude =
+      `${Math.abs(coordinate.longitude).toFixed(4)}° ${
+        coordinate.longitude >= 0 ? 'E' : 'W'
+      }`
+
+    return `${latitude} · ${longitude}`
+  }
+
+  function handleSearchResultSelect(
+    result: PlaceSearchResult,
+  ) {
     setSelectedLocation({
-      coordinate: {
-        latitude,
-        longitude,
-      },
-      source: 'coordinates',
+      coordinate: result.coordinate,
+      name: result.name,
+      source: 'search',
     })
+
+    setSearchResults([])
+    setSearchError(null)
+    setCoordinateInput(result.name)
+  }
+
+ function handleSetOrigin() {
+  console.log('SET ORIGIN CLICKED')
+
+  if (!selectedLocation) {
+    console.log('NO SELECTED LOCATION')
+    return
+  }
+
+  console.log('SETTING ORIGIN:', selectedLocation)
+
+  setOrigin(selectedLocation)
+}
+
+function handleSetDestination() {
+  console.log('SET DESTINATION CLICKED')
+
+  if (!selectedLocation) {
+    console.log('NO SELECTED LOCATION')
+    return
+  }
+
+  console.log(
+    'SETTING DESTINATION:',
+    selectedLocation,
+  )
+
+  setDestination(selectedLocation)
+}
+
+
+  /*
+   * Format coordinates for the selected-location panel.
+   */
+  function formatLocationCoordinate(
+    location: Location,
+  ) {
+    const { latitude, longitude } =
+      location.coordinate
+
+    const latitudeText =
+      `${Math.abs(latitude).toFixed(4)}° ${
+        latitude >= 0 ? 'N' : 'S'
+      }`
+
+    const longitudeText =
+      `${Math.abs(longitude).toFixed(4)}° ${
+        longitude >= 0 ? 'E' : 'W'
+      }`
+
+    return `${latitudeText} · ${longitudeText}`
   }
 
   return (
@@ -81,7 +235,7 @@ function App() {
         {/* Unified geographic location input */}
         <form
           className="tidal-coordinate-input"
-          onSubmit={handleCoordinateSubmit}
+          onSubmit={handleLocationSubmit}
         >
           <label
             htmlFor="tidal-coordinate-field"
@@ -93,12 +247,16 @@ function App() {
           <input
             id="tidal-coordinate-field"
             type="text"
+            autoComplete="off"
             value={coordinateInput}
-            onChange={(event) =>
+            onChange={(event) => {
               setCoordinateInput(
                 event.target.value,
               )
-            }
+
+              setSearchResults([])
+              setSearchError(null)
+            }}
             placeholder="PLACE OR LAT, LON"
             aria-label="Search for a place or enter latitude and longitude"
           />
@@ -106,23 +264,74 @@ function App() {
           <button type="submit">
             Locate
           </button>
+
+          {isSearching && (
+            <div className="tidal-location-results">
+              Searching...
+            </div>
+          )}
+
+          {!isSearching &&
+            searchResults.length > 0 && (
+              <div className="tidal-location-results">
+                {searchResults.map(
+                  (result, index) => (
+                    <button
+                      key={`${result.name}-${index}`}
+                      type="button"
+                      className="tidal-location-result"
+                      onClick={() =>
+                        handleSearchResultSelect(
+                          result,
+                        )
+                      }
+                    >
+                      <span className="tidal-location-result__name">
+                        {result.name}
+                      </span>
+
+                      {result.country && (
+                        <span className="tidal-location-result__country">
+                          {result.country}
+                        </span>
+                      )}
+
+                      <span className="tidal-location-result__coordinates">
+                        {formatCoordinate(
+                          result.coordinate,
+                        )}
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+
+          {searchError && (
+            <div className="tidal-location-results">
+              {searchError}
+            </div>
+          )}
         </form>
       </header>
 
       {/* Primary navigation environment */}
       <section className="tidal-map">
-        <TidalMap
-          className="tidal-map__leaflet"
-          onCoordinateChange={
-            setCursorCoordinate
-          }
-          selectedLocation={
-            selectedLocation
-          }
-          onLocationSelect={
-            setSelectedLocation
-          }
-        />
+      <TidalMap
+        className="tidal-map__leaflet"
+        onCoordinateChange={
+          setCursorCoordinate
+        }
+        selectedLocation={
+          selectedLocation
+        }
+        onLocationSelect={
+          setSelectedLocation
+        }
+        origin={origin}
+        destination={destination}
+      />
+
 
         {/* Geographic title */}
         <div className="tidal-location tidal-location--ocean">
@@ -137,21 +346,119 @@ function App() {
           </div>
         </div>
 
-        {/* Temporary route */}
-        <div className="tidal-route">
-          <div className="tidal-route__line" />
+       {/* Current origin and destination */}
+       <div className="tidal-route">
+         {origin && (
+           <div className="tidal-route__origin">
+             <span className="tidal-route__marker" />
+       
+             <span>
+               {origin.name ?? 'Origin'}
+             </span>
+           </div>
+         )}
+       
+         {destination && (
+           <div className="tidal-route__destination">
+             <span className="tidal-route__marker" />
+       
+             <span>
+               {destination.name ??
+                 'Destination'}
+             </span>
+           </div>
+         )}
+       </div>
+{/* Selected location information */}
+{selectedLocation && (
+  <div
+    className="tidal-selected-location"
+    onMouseDown={(event) => {
+      event.stopPropagation()
+    }}
+    onMouseUp={(event) => {
+      event.stopPropagation()
+    }}
+    onClick={(event) => {
+      event.stopPropagation()
+    }}
+  >
+    <div className="tidal-label">
+      {origin &&
+      origin.coordinate.latitude ===
+        selectedLocation.coordinate.latitude &&
+      origin.coordinate.longitude ===
+        selectedLocation.coordinate.longitude
+        ? 'Origin'
+        : destination &&
+            destination.coordinate.latitude ===
+              selectedLocation.coordinate.latitude &&
+            destination.coordinate.longitude ===
+              selectedLocation.coordinate.longitude
+          ? 'Destination'
+          : 'Selected location'}
+    </div>
 
-          <div className="tidal-route__origin">
-            <span className="tidal-route__marker" />
-            <span>Origin</span>
-          </div>
+    <div className="tidal-selected-location__name">
+      {selectedLocation.name ??
+        'Selected location'}
+    </div>
 
-          <div className="tidal-route__destination">
-            <span className="tidal-route__marker" />
-            <span>Destination</span>
-          </div>
-        </div>
+    <div className="tidal-selected-location__coordinates">
+      {formatLocationCoordinate(
+        selectedLocation,
+      )}
+    </div>
 
+    {!(
+      (
+        origin &&
+        origin.coordinate.latitude ===
+          selectedLocation.coordinate.latitude &&
+        origin.coordinate.longitude ===
+          selectedLocation.coordinate.longitude
+      ) ||
+      (
+        destination &&
+        destination.coordinate.latitude ===
+          selectedLocation.coordinate.latitude &&
+        destination.coordinate.longitude ===
+          selectedLocation.coordinate.longitude
+      )
+    ) && (
+      <div className="tidal-selected-location__actions">
+        <button
+          type="button"
+          onMouseDown={(event) => {
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.stopPropagation()
+            handleSetOrigin()
+          }}
+        >
+          Set origin
+        </button>
+
+        <button
+          type="button"
+          onMouseDown={(event) => {
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.stopPropagation()
+            handleSetDestination()
+          }}
+        >
+          Set destination
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+
+       
         {/* Route information */}
         <aside className="tidal-route-card">
           <div className="tidal-label">

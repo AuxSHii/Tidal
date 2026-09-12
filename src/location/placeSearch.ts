@@ -1,23 +1,26 @@
 import type { Coordinate } from '../domain/coordinate'
 
 /*
-   result returned by a place-search provider.
- 
-  intent smaller than the provider's raw response.
-  
+  normalized location candidate returned by a place-search provider.
  */
 export interface PlaceSearchResult {
   name: string
+  country?: string
   coordinate: Coordinate
   description?: string
 }
 
 /*
- * Provider-independent contract for place searching.
- 
- ui dep on this interface rather then geoloc provider's
+ * Provider-independent contract for location search.
+ *
+ * autocomplete while the user is typing.
+ * search - when the user explctly submit a query.
  */
 export interface PlaceSearchService {
+  autocomplete(
+    query: string,
+  ): Promise<PlaceSearchResult[]>
+
   search(
     query: string,
   ): Promise<PlaceSearchResult[]>

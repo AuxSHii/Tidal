@@ -2,11 +2,11 @@ import {
   CircleMarker,
   GeoJSON,
   MapContainer,
-  Pane,
   Polyline,
   Tooltip,
   useMap,
 } from 'react-leaflet'
+
 import type {
   GeoJsonObject,
   FeatureCollection,
@@ -32,6 +32,10 @@ interface TidalMapProps {
   onLocationSelect?: (
     location: Location,
   ) => void
+
+  origin?: Location | null
+
+  destination?: Location | null
 }
 
 function MapView({
@@ -62,6 +66,20 @@ function MapView({
 
   return null
 }
+
+function LocationTooltipPane() {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!map.getPane('tidal-location-tooltip')) {
+      const pane = map.createPane('tidal-location-tooltip')
+      pane.style.zIndex = '1000'
+    }
+  }, [map])
+
+  return null
+}
+
 
 /*
  * Geographic reference layer.
@@ -197,11 +215,11 @@ function MapCoordinateTracker({
 }
 
 /*
- * Selects a geographic location when the map is clicked.
+ * Selects a new geographic location when the map itself
+ * is clicked.
  *
- * The selected location is passed to the parent,
- * which owns the shared location state.
- * Later this will become the basis for Origin and Destination.
+ * Marker clicks do not reach this handler because the
+ * role markers disable mouse-event bubbling.
  */
 function MapClickTracker({
   onLocationSelect,
@@ -244,11 +262,29 @@ function MapClickTracker({
   return null
 }
 
+function sameCoordinate(
+  first: Location | null | undefined,
+  second: Location | null | undefined,
+) {
+  if (!first || !second) {
+    return false
+  }
+
+  return (
+    first.coordinate.latitude ===
+      second.coordinate.latitude &&
+    first.coordinate.longitude ===
+      second.coordinate.longitude
+  )
+}
+
 export function TidalMap({
   className,
   onCoordinateChange,
   selectedLocation,
   onLocationSelect,
+  origin,
+  destination,
 }: TidalMapProps) {
   const [
     land,
@@ -289,6 +325,17 @@ export function TidalMap({
     }
   }, [])
 
+  const showSelectedMarker =
+    selectedLocation &&
+    !sameCoordinate(
+      selectedLocation,
+      origin,
+    ) &&
+    !sameCoordinate(
+      selectedLocation,
+      destination,
+    )
+
   return (
     <div className={className}>
       <MapContainer
@@ -300,7 +347,10 @@ export function TidalMap({
         minZoom={2}
         maxZoom={10}
         className="tidal-leaflet-map"
+
       >
+
+      <LocationTooltipPane/>
         <MapView
           selectedLocation={
             selectedLocation
@@ -337,64 +387,201 @@ export function TidalMap({
           />
         )}
 
-        {selectedLocation && (
-          <Pane
-            name="tidal-selection"
-            style={{
-              zIndex: 1000,
+        {/* Origin marker */}
+
+        {origin && (
+          <CircleMarker
+            center={[
+              origin.coordinate.latitude,
+              origin.coordinate.longitude,
+            ]}
+            radius={8}
+            pane="tidal-location-tooltip"
+
+            bubblingMouseEvents={false}
+            pathOptions={{
+              color: '#d9a441',
+              weight: 2,
+              fillColor: '#d9a441',
+              fillOpacity: 0.9,
+            }}
+            eventHandlers={{
+              click: () => {
+                onLocationSelect?.(
+                  origin,
+                )
+              },
             }}
           >
-            <CircleMarker
-              center={[
-                selectedLocation.coordinate
-                  .latitude,
-                selectedLocation.coordinate
-                  .longitude,
-              ]}
-              radius={5}
-              pathOptions={{
-                color: '#d9a441',
-                weight: 1,
-                fillColor: '#d9a441',
-                fillOpacity: 0.9,
-              }}
-            >
-              <Tooltip
-                permanent
-                direction="right"
-                offset={[10, 0]}
-                className="tidal-location-tooltip"
-              >
-                <div className="tidal-location-tooltip__content">
-                  <div className="tidal-location-tooltip__label">
-                    Selected
-                  </div>
+            <Tooltip
+              permanent
+              direction="right"
+              offset={[12, 0]}
+              pane="tidal-location-tooltip"
 
-                  <div className="tidal-location-tooltip__value">
-                    {Math.abs(
-                      selectedLocation
-                        .coordinate.latitude,
-                    ).toFixed(4)}
-                    °{' '}
-                    {selectedLocation
-                      .coordinate.latitude >= 0
-                      ? 'N'
-                      : 'S'}{' '}
-                    ·{' '}
-                    {Math.abs(
-                      selectedLocation
-                        .coordinate.longitude,
-                    ).toFixed(4)}
-                    °{' '}
-                    {selectedLocation
-                      .coordinate.longitude >= 0
-                      ? 'E'
-                      : 'W'}
-                  </div>
+              className="tidal-location-tooltip"
+            >
+              <div className="tidal-location-tooltip__content">
+                <div className="tidal-location-tooltip__label">
+                  ORIGIN
                 </div>
-              </Tooltip>
-            </CircleMarker>
-          </Pane>
+
+                {origin.name && (
+                  <div className="tidal-location-tooltip__name">
+                    {origin.name}
+                  </div>
+                )}
+
+                <div className="tidal-location-tooltip__value">
+                  {Math.abs(
+                    origin.coordinate.latitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {origin.coordinate.latitude >=
+                  0
+                    ? 'N'
+                    : 'S'}{' '}
+                  ·{' '}
+                  {Math.abs(
+                    origin.coordinate.longitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {origin.coordinate.longitude >=
+                  0
+                    ? 'E'
+                    : 'W'}
+                </div>
+              </div>
+            </Tooltip>
+          </CircleMarker>
+        )}
+
+        {/* Destination marker */}
+
+        {destination && (
+          <CircleMarker
+            center={[
+              destination.coordinate.latitude,
+              destination.coordinate.longitude,
+            ]}
+            radius={6}
+            pane="tidal-location-tooltip"
+            bubblingMouseEvents={false}
+            pathOptions={{
+              color: '#e4dcc8',
+              weight: 2,
+              fillColor: '#e4dcc8',
+              fillOpacity: 0.9,
+            }}
+            eventHandlers={{
+              click: () => {
+                onLocationSelect?.(
+                  destination,
+                )
+              },
+            }}
+          >
+            <Tooltip
+              permanent
+              direction="right"
+              offset={[12, 0]}
+              pane="tidal-location-tooltip"
+              className="tidal-location-tooltip"
+            >
+              <div className="tidal-location-tooltip__content">
+                <div className="tidal-location-tooltip__label">
+                  DESTINATION
+                </div>
+
+                {destination.name && (
+                  <div className="tidal-location-tooltip__name">
+                    {destination.name}
+                  </div>
+                )}
+
+                <div className="tidal-location-tooltip__value">
+                  {Math.abs(
+                    destination.coordinate.latitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {destination.coordinate.latitude >=
+                  0
+                    ? 'N'
+                    : 'S'}{' '}
+                  ·{' '}
+                  {Math.abs(
+                    destination.coordinate.longitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {destination.coordinate.longitude >=
+                  0
+                    ? 'E'
+                    : 'W'}
+                </div>
+              </div>
+            </Tooltip>
+          </CircleMarker>
+        )}
+
+        {/* Currently selected, unassigned location */}
+
+        {showSelectedMarker && (
+          <CircleMarker
+            center={[
+              selectedLocation.coordinate.latitude,
+              selectedLocation.coordinate.longitude,
+            ]}
+            radius={5}
+            pane="tidal-location-tooltip"
+
+            bubblingMouseEvents={false}
+            pathOptions={{
+              color: '#d9a441',
+              weight: 1,
+              fillColor: '#d9a441',
+              fillOpacity: 0.9,
+            }}
+          >
+            <Tooltip
+              permanent
+              direction="right"
+              offset={[10, 0]}
+              pane="tidal-location-tooltip"
+              className="tidal-location-tooltip"
+            >
+              <div className="tidal-location-tooltip__content">
+                <div className="tidal-location-tooltip__label">
+                  SELECTED
+                </div>
+
+                {selectedLocation.name && (
+                  <div className="tidal-location-tooltip__name">
+                    {selectedLocation.name}
+                  </div>
+                )}
+
+                <div className="tidal-location-tooltip__value">
+                  {Math.abs(
+                    selectedLocation.coordinate.latitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {selectedLocation.coordinate.latitude >=
+                  0
+                    ? 'N'
+                    : 'S'}{' '}
+                  ·{' '}
+                  {Math.abs(
+                    selectedLocation.coordinate.longitude,
+                  ).toFixed(4)}
+                  °{' '}
+                  {selectedLocation.coordinate.longitude >=
+                  0
+                    ? 'E'
+                    : 'W'}
+                </div>
+              </div>
+            </Tooltip>
+          </CircleMarker>
         )}
       </MapContainer>
     </div>

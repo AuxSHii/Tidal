@@ -5,7 +5,6 @@
   --tidal-deep: #071522;
   --tidal-ocean: #0b1d2e;
   --tidal-ocean-soft: #142c40;
-  /*--tidal-land: #d8d4c8;*/
 
   /* Cartographic palette */
   --tidal-sand: #e4dcc8;
@@ -90,7 +89,43 @@ body {
   left: 0;
 
   width: 100%;
-  padding: 30px 36px;
+  height: 68px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 36px;
+
+  background: rgba(7, 21, 34, 0.38);
+
+  backdrop-filter: blur(12px);
+
+  pointer-events: none;
+}
+
+/*
+header
+*/
+.tidal-header::after {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 150px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(7, 21, 34, 0.28) 0%,
+      rgba(7, 21, 34, 0.20) 35%,
+      rgba(7, 21, 34, 0.08) 65%,
+      transparent 100%
+    );
 
   pointer-events: none;
 }
@@ -120,6 +155,218 @@ body {
 }
 
 /* --------------------------------------------------
+   Unified location input
+-------------------------------------------------- */
+
+.tidal-coordinate-input {
+  position: absolute;
+  z-index: 30;
+
+  top: 50%;
+  right: 36px;
+
+  width: min(330px, calc(100vw - 320px));
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+
+  transform: translateY(-50%);
+
+  pointer-events: auto;
+}
+
+.tidal-coordinate-input__label {
+  margin-right: 10px;
+
+  color: rgba(255, 255, 255, 0.42);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.45rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  line-height: 1;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+}
+
+.tidal-coordinate-input input {
+  width: 100%;
+  height: 30px;
+
+  padding: 0 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: none;
+  border-radius: 2px 0 0 2px;
+
+  outline: none;
+
+  background: rgba(7, 21, 34, 0.90);
+  color: rgba(255, 255, 255, 0.9);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.54rem;
+  font-weight: 400;
+  letter-spacing: 0.035em;
+
+  backdrop-filter: blur(8px);
+}
+
+.tidal-coordinate-input input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.tidal-coordinate-input input:focus {
+  border-color: rgba(217, 164, 65, 0.42);
+}
+
+/*
+ * Keep browser autofill from changing the
+ * appearance of the TIDAL location field.
+ */
+.tidal-coordinate-input input:-webkit-autofill,
+.tidal-coordinate-input input:-webkit-autofill:hover,
+.tidal-coordinate-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
+
+  -webkit-box-shadow:
+    0 0 0 1000px rgba(7, 21, 34, 0.90) inset;
+
+  box-shadow:
+    0 0 0 1000px rgba(7, 21, 34, 0.90) inset;
+
+  transition:
+    background-color 9999s ease-out 0s;
+}
+
+.tidal-coordinate-input button[type="submit"] {
+  height: 30px;
+
+  padding: 0 11px;
+
+  border: 1px solid rgba(217, 164, 65, 0.36);
+  border-radius: 0 2px 2px 0;
+
+  background: rgba(217, 164, 65, 0.12);
+  color: rgba(217, 164, 65, 0.92);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.45rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+
+  text-transform: uppercase;
+
+  cursor: pointer;
+}
+
+.tidal-coordinate-input button[type="submit"]:hover {
+  background: rgba(217, 164, 65, 0.15);
+  border-color: rgba(217, 164, 65, 0.5);
+}
+
+/* --------------------------------------------------
+   Location search results
+-------------------------------------------------- */
+
+.tidal-location-results {
+  position: absolute;
+  z-index: 100;
+
+  top: calc(100% + 7px);
+  left: 0;
+
+  width: 100%;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+
+  background: rgba(7, 21, 34, 0.96);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28);
+
+  backdrop-filter: blur(14px);
+
+  pointer-events: auto;
+}
+
+.tidal-location-result {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+
+  padding: 10px 13px;
+
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  outline: none;
+
+  background: transparent;
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.tidal-location-result:last-child {
+  border-bottom: none;
+}
+
+.tidal-location-result:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tidal-location-result:focus-visible {
+  background: rgba(217, 164, 65, 0.08);
+
+  box-shadow:
+    inset 2px 0 0 var(--tidal-amber);
+}
+
+.tidal-location-result__name {
+  display: block;
+
+  color: rgba(255, 255, 255, 0.92);
+
+  font-family: var(--tidal-body-serif);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.tidal-location-result__country {
+  display: block;
+
+  color: rgba(255, 255, 255, 0.55);
+
+  font-family: var(--tidal-body-serif);
+  font-size: 0.57rem;
+  line-height: 1.2;
+}
+
+.tidal-location-result__coordinates {
+  display: block;
+
+  color: rgba(217, 164, 65, 0.72);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.49rem;
+  line-height: 1.2;
+
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------
    Map
 -------------------------------------------------- */
 
@@ -134,8 +381,6 @@ body {
   background: var(--tidal-ocean);
 }
 
-
-
 /* --------------------------------------------------
    Geographic title
 -------------------------------------------------- */
@@ -143,15 +388,20 @@ body {
 .tidal-location {
   position: absolute;
   z-index: 5;
+
   top: 50%;
   left: 8%;
+
   transform: translateY(-50%);
 }
 
 .tidal-location__annotation {
   padding: 14px 18px 16px;
+
   border: 1px solid rgba(7, 21, 34, 0.08);
+
   background: rgba(255, 255, 255, 0.2);
+
   backdrop-filter: blur(5px);
 }
 
@@ -181,76 +431,20 @@ body {
 
 .tidal-location__title {
   margin: 10px 0 0;
+
   font-family: var(--tidal-serif);
   font-size: clamp(2.8rem, 5vw, 5.5rem);
   font-weight: 400;
+
   letter-spacing: -0.025em;
   line-height: 0.9;
 }
 
 /* --------------------------------------------------
-   Route
+   ...
 -------------------------------------------------- */
 
-.tidal-route {
-  position: absolute;
-  z-index: 4;
 
-  top: 50%;
-  left: 25%;
-  right: 18%;
-
-  transform: translateY(-50%);
-}
-
-.tidal-route__line {
-  width: 100%;
-  height: 1px;
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--tidal-faint) 0 5px,
-      transparent 5px 12px
-    );
-}
-
-.tidal-route__origin,
-.tidal-route__destination {
-  position: absolute;
-
-  top: 10px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  color: var(--tidal-muted);
-
-  font-family: var(--tidal-mono);
-  font-size: 0.52rem;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.tidal-route__origin {
-  left: 0;
-}
-
-.tidal-route__destination {
-  right: 0;
-  align-items: flex-end;
-}
-
-.tidal-route__marker {
-  width: 7px;
-  height: 7px;
-
-  border: 1px solid var(--tidal-sand);
-  border-radius: 50%;
-
-  background: var(--tidal-ocean);
-}
 
 /* --------------------------------------------------
    Route information
@@ -282,6 +476,7 @@ body {
   font-family: var(--tidal-serif);
   font-size: 1.45rem;
   font-weight: 400;
+
   letter-spacing: -0.015em;
   line-height: 1;
 }
@@ -299,6 +494,7 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+
   gap: 20px;
 }
 
@@ -308,12 +504,13 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.6rem;
   font-weight: 400;
+
   font-variant-numeric: tabular-nums;
 }
 
-/*   coordinate styles   */
-
-
+/* --------------------------------------------------
+   Coordinate readout
+-------------------------------------------------- */
 
 .tidal-coordinate {
   position: absolute;
@@ -331,6 +528,7 @@ body {
   border-left: 2px solid var(--tidal-amber);
 
   background: rgba(7, 21, 34, 0.48);
+
   backdrop-filter: blur(4px);
 }
 
@@ -340,6 +538,7 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.47rem;
   font-weight: 400;
+
   letter-spacing: 0.16em;
   line-height: 1;
 
@@ -352,24 +551,119 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.61rem;
   font-weight: 400;
+
   letter-spacing: 0.02em;
   line-height: 1.2;
 
   font-variant-numeric: tabular-nums;
+
   white-space: nowrap;
 }
 
-/* tidal location */
+/* --------------------------------------------------
+   Selected location controls
+-------------------------------------------------- */
 
+.tidal-selected-location {
+  position: absolute;
+  z-index: 1000;
+
+  left: 36px;
+  bottom: 36px;
+
+  width: 250px;
+
+  padding: 14px 16px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+
+  background: rgba(7, 21, 34, 0.88);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28);
+
+  backdrop-filter: blur(12px);
+
+  pointer-events: auto;
+}
+
+.tidal-selected-location__name {
+  margin-top: 5px;
+
+  color: rgba(255, 255, 255, 0.9);
+
+  font-family: var(--tidal-body-serif);
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.tidal-selected-location__coordinates {
+  margin-top: 5px;
+
+  color: rgba(217, 164, 65, 0.72);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.49rem;
+  letter-spacing: 0.03em;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.tidal-selected-location__actions {
+  display: flex;
+  gap: 7px;
+
+  margin-top: 12px;
+}
+
+.tidal-selected-location__actions button {
+  position: relative;
+  z-index: 1001;
+
+  padding: 6px 8px;
+
+  border: 1px solid rgba(217, 164, 65, 0.28);
+  border-radius: 2px;
+
+  background: rgba(217, 164, 65, 0.06);
+  color: rgba(217, 164, 65, 0.78);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.43rem;
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  pointer-events: auto;
+}
+
+.tidal-selected-location__actions button:hover {
+  background: rgba(217, 164, 65, 0.13);
+  border-color: rgba(217, 164, 65, 0.42);
+}
+
+.tidal-selected-location__actions button:focus-visible {
+  outline: 1px solid rgba(217, 164, 65, 0.65);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------
+   Selected location tooltip
+-------------------------------------------------- */
 
 .tidal-location-tooltip.leaflet-tooltip {
   margin: 0 !important;
   padding: 0 !important;
+ 
 
   border: 1px solid rgba(217, 164, 65, 0.28) !important;
   border-radius: 2px !important;
 
-  background: rgba(7, 21, 34, 0.88) !important;
+  background: rgba(7, 21, 34, 9) !important;
+  opacity: 1 !important;
 
   box-shadow: none !important;
 
@@ -396,6 +690,7 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.43rem;
   font-weight: 400;
+
   letter-spacing: 0.18em;
   line-height: 1;
 
@@ -408,16 +703,14 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.59rem;
   font-weight: 400;
+
   letter-spacing: 0.015em;
   line-height: 1.2;
 
   font-variant-numeric: tabular-nums;
+
   white-space: nowrap;
 }
-
-
-
-
 
 /* --------------------------------------------------
    Bottom progression
@@ -466,169 +759,13 @@ body {
   font-family: var(--tidal-mono);
   font-size: 0.57rem;
   font-weight: 400;
+
   letter-spacing: 0.1em;
 }
 
 /* --------------------------------------------------
-   Small screens
--------------------------------------------------- */
-
-
-/* 
-header
-*/
-.tidal-header {
-  position: absolute;
-  z-index: 20;
-
-  top: 0;
-  left: 0;
-
-  width: 100%;
-  height: 68px;
-
-  display: flex;
-  align-items: center;
-
-  padding: 0 36px;
-
-  background: rgba(7, 21, 34, 0.38);
-
-  backdrop-filter: blur(12px);
-
-  pointer-events: none;
-
-  mask-image: linear-gradient(to bottom , black 0% , black 55% , transparent 100%);
-}
-
-@media (max-width: 700px) {
-  .tidal-brand {
-    display: block;
-  }
-
-  .tidal-brand__meta {
-    display: block;
-    margin-top: 5px;
-  }
-
-  .tidal-location {
-    left: 22px;
-  }
-
-  .tidal-location__title {
-    font-size: 3rem;
-  }
-
-  .tidal-route {
-    left: 22px;
-    right: 22px;
-  }
-
-  .tidal-route-card {
-    right: 22px;
-    bottom: 90px;
-    width: min(285px, calc(100% - 44px));
-  }
-
-  .tidal-coordinate {
-    left: 22px;
-    bottom: 24px;
-  }
-
-  .tidal-leg-control {
-    bottom: 24px;
-  }
-}
-
-/* 
-   tidal cord input
-
-*/
-
-.tidal-coordinate-input {
-  position: absolute;
- 
-  right: 36px;
-
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  pointer-events: auto;
-}
-
-.tidal-coordinate-input__label {
-  color: rgba(255, 255, 255, 0.48);
-
-  font-family: var(--tidal-mono);
-  font-size: 0.47rem;
-  font-weight: 400;
-  letter-spacing: 0.16em;
-  line-height: 1;
-
-  text-transform: uppercase;
-}
-
-.tidal-coordinate-input input {
-  width: 145px;
-
-  padding: 6px 8px;
-
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 2px;
-
-  outline: none;
-
-  background: rgba(3, 13, 22, 0.72);
-
-  color: rgba(255, 255, 255, 0.94);
-
-  font-family: var(--tidal-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.02em;
-
-  backdrop-filter: blur(4px);
-}
-
-.tidal-coordinate-input input::placeholder {
-  color: rgba(255, 255, 255, 0.28);
-}
-
-.tidal-coordinate-input input:focus {
-  border-color: rgba(217, 164, 65, 0.55);
-}
-
-.tidal-coordinate-input button {
-  padding: 6px 10px;
-
-  border: 1px solid rgba(217, 164, 65, 0.5);
-  border-radius: 2px;
-
-  background: rgba(217, 164, 65, 0.12);
-
-  color: rgba(217, 164, 65, 0.98);
-
-  font-family: var(--tidal-mono);
-  font-size: 0.47rem;
-  letter-spacing: 0.12em;
-
-  text-transform: uppercase;
-
-  cursor: pointer;
-}
-
-.tidal-coordinate-input button:hover {
-  background: rgba(217, 164, 65, 0.18);
-}
-
-
-
-
-
-
-/*
    Leaflet map
- */
+-------------------------------------------------- */
 
 .tidal-map__leaflet {
   position: absolute;
@@ -668,7 +805,113 @@ header
   transition: none;
 }
 
-/*  
-    stylings
-*/
+/* --------------------------------------------------
+   Small screens
+-------------------------------------------------- */
 
+@media (max-width: 700px) {
+  .tidal-header {
+    height: 96px;
+
+    align-items: flex-start;
+
+    padding: 18px 22px;
+  }
+
+  .tidal-brand {
+    display: block;
+  }
+
+  .tidal-brand__meta {
+    display: block;
+
+    margin-top: 5px;
+  }
+
+  .tidal-coordinate-input {
+    top: auto;
+    right: 22px;
+    bottom: 12px;
+
+    width: calc(100vw - 44px);
+
+    transform: none;
+  }
+
+  .tidal-location {
+    left: 22px;
+  }
+
+  .tidal-location__title {
+    font-size: 3rem;
+  }
+
+
+  .tidal-route-card {
+    right: 22px;
+    bottom: 90px;
+
+    width: min(
+      285px,
+      calc(100% - 44px)
+    );
+  }
+
+  .tidal-coordinate {
+    left: 22px;
+    bottom: 24px;
+  }
+
+  .tidal-leg-control {
+    bottom: 24px;
+  }
+
+  .tidal-selected-location {
+    left: 22px;
+    bottom: 72px;
+
+    width: min(
+      250px,
+      calc(100% - 44px)
+    );
+  }
+}
+/* marker styles */
+
+.tidal-role-marker {
+  background: transparent;
+  border: 0;
+}
+
+.tidal-role-marker__shape {
+  width: 18px;
+  height: 18px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.tidal-role-marker__shape--origin {
+  border: 2px solid var(--tidal-accent);
+  border-radius: 50%;
+}
+
+.tidal-role-marker__shape--destination {
+  border: 2px solid var(--tidal-accent);
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.tidal-role-marker__dot {
+  width: 4px;
+  height: 4px;
+  background: var(--tidal-accent);
+  border-radius: 50%;
+}
+
+.tidal-role-marker__shape--destination
+  .tidal-role-marker__dot {
+  transform: rotate(-45deg);
+}
