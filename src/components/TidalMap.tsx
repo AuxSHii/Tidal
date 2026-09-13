@@ -7,6 +7,7 @@ import {
   useMap,
 } from 'react-leaflet'
 
+import { placeSearchService } from '../location/placeSearchService'
 import type {
   GeoJsonObject,
   FeatureCollection,
@@ -26,6 +27,9 @@ interface TidalMapProps {
       longitude: number
     } | null,
   ) => void
+
+  onRemoveOrigin: () => void
+  onRemoveDestination: () => void
 
   selectedLocation?: Location | null
 
@@ -72,14 +76,16 @@ function LocationTooltipPane() {
 
   useEffect(() => {
     if (!map.getPane('tidal-location-tooltip')) {
-      const pane = map.createPane('tidal-location-tooltip')
+      const pane = map.createPane(
+        'tidal-location-tooltip',
+      )
+
       pane.style.zIndex = '1000'
     }
   }, [map])
 
   return null
 }
-
 
 /*
  * Geographic reference layer.
@@ -231,33 +237,41 @@ function MapClickTracker({
   const map = useMap()
 
   useEffect(() => {
-    function handleClick(
+    async function handleClick(
       event: LeafletMouseEvent,
     ) {
+      const coordinate = {
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng,
+      }
+
+      let name: string | undefined
+
+      try {
+        const result =
+          await placeSearchService.reverseGeocode(
+            coordinate,
+          )
+
+        name = result?.name
+      } catch {
+        // Keep the clicked coordinate usable
+        // even if reverse geocoding fails.
+      }
+
       onLocationSelect({
-        coordinate: {
-          latitude: event.latlng.lat,
-          longitude: event.latlng.lng,
-        },
+        coordinate,
+        name,
         source: 'map',
       })
     }
 
-    map.on(
-      'click',
-      handleClick,
-    )
+    map.on('click', handleClick)
 
     return () => {
-      map.off(
-        'click',
-        handleClick,
-      )
+      map.off('click', handleClick)
     }
-  }, [
-    map,
-    onLocationSelect,
-  ])
+  }, [map, onLocationSelect])
 
   return null
 }
@@ -285,6 +299,8 @@ export function TidalMap({
   onLocationSelect,
   origin,
   destination,
+  onRemoveOrigin,
+  onRemoveDestination,
 }: TidalMapProps) {
   const [
     land,
@@ -347,10 +363,9 @@ export function TidalMap({
         minZoom={2}
         maxZoom={10}
         className="tidal-leaflet-map"
-
       >
+        <LocationTooltipPane />
 
-      <LocationTooltipPane/>
         <MapView
           selectedLocation={
             selectedLocation
@@ -395,13 +410,27 @@ export function TidalMap({
               origin.coordinate.latitude,
               origin.coordinate.longitude,
             ]}
-            radius={8}
+            radius={
+              selectedLocation &&
+              sameCoordinate(
+                selectedLocation,
+                origin,
+              )
+                ? 10
+                : 8
+            }
             pane="tidal-location-tooltip"
-
             bubblingMouseEvents={false}
             pathOptions={{
               color: '#d9a441',
-              weight: 2,
+              weight:
+                selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  origin,
+                )
+                  ? 3
+                  : 2,
               fillColor: '#d9a441',
               fillOpacity: 0.9,
             }}
@@ -418,9 +447,40 @@ export function TidalMap({
               direction="right"
               offset={[12, 0]}
               pane="tidal-location-tooltip"
-
-              className="tidal-location-tooltip"
+              className={`tidal-location-tooltip ${
+                selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  origin,
+                )
+                  ? 'tidal-location-tooltip--selected'
+                  : ''
+              }`}
             >
+              {selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  origin,
+                ) && (
+                  <button
+                    type="button"
+                    className="tidal-location-tooltip__remove"
+                    aria-label="Remove origin"
+                    onMouseDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onMouseUp={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onRemoveOrigin()
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+
               <div className="tidal-location-tooltip__content">
                 <div className="tidal-location-tooltip__label">
                   ORIGIN
@@ -464,12 +524,27 @@ export function TidalMap({
               destination.coordinate.latitude,
               destination.coordinate.longitude,
             ]}
-            radius={6}
+            radius={
+              selectedLocation &&
+              sameCoordinate(
+                selectedLocation,
+                destination,
+              )
+                ? 8
+                : 6
+            }
             pane="tidal-location-tooltip"
             bubblingMouseEvents={false}
             pathOptions={{
               color: '#e4dcc8',
-              weight: 2,
+              weight:
+                selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  destination,
+                )
+                  ? 3
+                  : 2,
               fillColor: '#e4dcc8',
               fillOpacity: 0.9,
             }}
@@ -486,8 +561,40 @@ export function TidalMap({
               direction="right"
               offset={[12, 0]}
               pane="tidal-location-tooltip"
-              className="tidal-location-tooltip"
+              className={`tidal-location-tooltip ${
+                selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  destination,
+                )
+                  ? 'tidal-location-tooltip--selected'
+                  : ''
+              }`}
             >
+              {selectedLocation &&
+                sameCoordinate(
+                  selectedLocation,
+                  destination,
+                ) && (
+                  <button
+                    type="button"
+                    className="tidal-location-tooltip__remove"
+                    aria-label="Remove destination"
+                    onMouseDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onMouseUp={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onRemoveDestination()
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+
               <div className="tidal-location-tooltip__content">
                 <div className="tidal-location-tooltip__label">
                   DESTINATION
@@ -533,7 +640,6 @@ export function TidalMap({
             ]}
             radius={5}
             pane="tidal-location-tooltip"
-
             bubblingMouseEvents={false}
             pathOptions={{
               color: '#d9a441',
@@ -547,7 +653,7 @@ export function TidalMap({
               direction="right"
               offset={[10, 0]}
               pane="tidal-location-tooltip"
-              className="tidal-location-tooltip"
+              className="tidal-location-tooltip tidal-location-tooltip--selected"
             >
               <div className="tidal-location-tooltip__content">
                 <div className="tidal-location-tooltip__label">

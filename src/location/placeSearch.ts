@@ -15,6 +15,7 @@ export interface PlaceSearchResult {
  *
  * autocomplete while the user is typing.
  * search - when the user explctly submit a query.
+ * reverseGeocode - resolve a coordinate into a named location.
  */
 export interface PlaceSearchService {
   autocomplete(
@@ -24,4 +25,8 @@ export interface PlaceSearchService {
   search(
     query: string,
   ): Promise<PlaceSearchResult[]>
+
+  reverseGeocode(
+    coordinate: Coordinate,
+  ): Promise<PlaceSearchResult | null>
 }

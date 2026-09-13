@@ -657,12 +657,14 @@ header
 .tidal-location-tooltip.leaflet-tooltip {
   margin: 0 !important;
   padding: 0 !important;
+  position: relative;
+  pointer-events: auto !important ;
  
 
   border: 1px solid rgba(217, 164, 65, 0.28) !important;
   border-radius: 2px !important;
 
-  background: rgba(7, 21, 34, 9) !important;
+  background: rgba(7, 21, 34, 0.9) !important;
   opacity: 1 !important;
 
   box-shadow: none !important;
@@ -711,6 +713,36 @@ header
 
   white-space: nowrap;
 }
+
+/*   remove tooltip  */
+
+
+.tidal-location-tooltip__remove {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+
+  padding: 0;
+  border: 0;
+
+  background: transparent;
+
+  color: rgba(255, 255, 255, 0.48);
+
+  font-family: var(--tidal-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.tidal-location-tooltip__remove:hover {
+  color: rgba(217, 164, 65, 0.95);
+}
+
+
+
 
 /* --------------------------------------------------
    Bottom progression
@@ -914,4 +946,21 @@ header
 .tidal-role-marker__shape--destination
   .tidal-role-marker__dot {
   transform: rotate(-45deg);
+}
+
+/* 
+    selceted tooltip-highlighting
+ 
+ */
+
+ .tidal-location-tooltip--selected.leaflet-tooltip {
+  border-color: rgba(217, 164, 65, 0.72) !important;
+  box-shadow:
+    0 0 0 1px rgba(217, 164, 65, 0.12),
+    0 4px 18px rgba(0, 0, 0, 0.18) !important;
+}
+
+.tidal-location-tooltip--selected
+  .tidal-location-tooltip__content {
+  border-left-color: var(--tidal-amber);
 }

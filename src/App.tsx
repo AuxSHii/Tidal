@@ -186,14 +186,34 @@ function handleSetDestination() {
     console.log('NO SELECTED LOCATION')
     return
   }
-
-  console.log(
+    console.log(
     'SETTING DESTINATION:',
     selectedLocation,
   )
 
   setDestination(selectedLocation)
 }
+  
+
+function handleRemoveOrigin() {
+  setOrigin(null)
+  setSelectedLocation(null)
+}
+
+function handleRemoveDestination() {
+  setDestination(null)
+  setSelectedLocation(null)
+}
+
+
+
+
+
+ 
+
+
+
+
 
 
   /*
@@ -330,6 +350,8 @@ function handleSetDestination() {
         }
         origin={origin}
         destination={destination}
+        onRemoveOrigin={handleRemoveOrigin}
+        onRemoveDestination={handleRemoveDestination}
       />
 
 
@@ -346,32 +368,23 @@ function handleSetDestination() {
           </div>
         </div>
 
-       {/* Current origin and destination */}
-       <div className="tidal-route">
-         {origin && (
-           <div className="tidal-route__origin">
-             <span className="tidal-route__marker" />
-       
-             <span>
-               {origin.name ?? 'Origin'}
-             </span>
-           </div>
-         )}
-       
-         {destination && (
-           <div className="tidal-route__destination">
-             <span className="tidal-route__marker" />
-       
-             <span>
-               {destination.name ??
-                 'Destination'}
-             </span>
-           </div>
-         )}
-       </div>
+
 {/* Selected location information */}
-{selectedLocation && (
-  <div
+{selectedLocation &&
+  !(
+    (origin &&
+      origin.coordinate.latitude ===
+        selectedLocation.coordinate.latitude &&
+      origin.coordinate.longitude ===
+        selectedLocation.coordinate.longitude) ||
+    (destination &&
+      destination.coordinate.latitude ===
+        selectedLocation.coordinate.latitude &&
+      destination.coordinate.longitude ===
+        selectedLocation.coordinate.longitude)
+  ) && (
+    <div
+
     className="tidal-selected-location"
     onMouseDown={(event) => {
       event.stopPropagation()
