@@ -473,7 +473,8 @@ function handleRemoveDestination() {
 
        
         {/* Route information */}
-        <aside className="tidal-route-card">
+        {origin && destination && (
+          <aside className="tidal-route-card">
           <div className="tidal-label">
             Current route
           </div>
@@ -504,6 +505,8 @@ function handleRemoveDestination() {
             </div>
           </div>
         </aside>
+      )}
+
 
         {/* Geographic coordinate readout */}
         <div className="tidal-coordinate">
@@ -526,27 +529,6 @@ function handleRemoveDestination() {
                 : 'Move cursor over map'}
             </div>
           </div>
-        </div>
-
-        {/* Voyage progression */}
-        <div className="tidal-leg-control">
-          <button
-            type="button"
-            aria-label="Previous stage"
-          >
-            ‹
-          </button>
-
-          <span className="tidal-leg-control__index">
-            01 / 04
-          </span>
-
-          <button
-            type="button"
-            aria-label="Next stage"
-          >
-            ›
-          </button>
         </div>
       </section>
     </main>
