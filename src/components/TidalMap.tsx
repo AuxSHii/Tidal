@@ -18,6 +18,10 @@ import { useEffect, useState } from 'react'
 
 import type { Location } from '../domain/location'
 
+//route
+import type { Route } from '../domain/route'
+
+
 interface TidalMapProps {
   className?: string
 
@@ -30,6 +34,11 @@ interface TidalMapProps {
 
   onRemoveOrigin: () => void
   onRemoveDestination: () => void
+
+  //routesss prop
+ route? : Route | null
+
+
 
   selectedLocation?: Location | null
 
@@ -301,6 +310,7 @@ export function TidalMap({
   destination,
   onRemoveOrigin,
   onRemoveDestination,
+  route,
 }: TidalMapProps) {
   const [
     land,
@@ -401,6 +411,27 @@ export function TidalMap({
             }}
           />
         )}
+
+
+      {/* route calc */}
+
+      {route && route.points.length > 1 && (
+        <Polyline
+            positions={route.points.map((point => [   
+               point.latitude,
+               point.longitude,
+
+
+              ]))}   
+          />
+        )}
+
+
+
+
+
+
+
 
         {/* Origin marker */}
 

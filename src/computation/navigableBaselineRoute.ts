@@ -46,6 +46,8 @@ export function generateNavigableBaselineRoute(
   spacing: number = 10000,
   paddingCells: number = 5,
 ): Route | null {
+  const gridStart = performance.now()
+
   const nodes = generateNavigationGrid(
     start,
     end,
@@ -53,16 +55,52 @@ export function generateNavigableBaselineRoute(
     paddingCells,
   )
 
+  const gridTime = performance.now() - gridStart
+
+  const filteringStart = performance.now()
+
   const navigableNodes = filterNavigableNodes(
     nodes,
     constraint,
   )
+console.log(
+    'Geographic candidate count:',
+    'getCandidateCount' in constraint &&
+      typeof constraint.getCandidateCount === 'function'
+      ? constraint.getCandidateCount()
+      : 'unavailable',
+  )
+
+  console.log(
+    'RBush time:',
+    'getRbushTime' in constraint &&
+      typeof constraint.getRbushTime === 'function'
+      ? constraint.getRbushTime()
+      : 'unavailable',
+  )
+
+  console.log(
+    'Turf time:',
+    'getTurfTime' in constraint &&
+      typeof constraint.getTurfTime === 'function'
+      ? constraint.getTurfTime()
+      : 'unavailable',
+  )
+
+  const filteringTime =
+    performance.now() - filteringStart
+
+  const graphStart = performance.now()
 
   const edges = buildNavigationGraph(
     navigableNodes,
     constraint,
     spacing,
   )
+
+  const graphTime = performance.now() - graphStart
+
+  const nearestNodeStart = performance.now()
 
   const startNode = findNearestNode(
     start,
@@ -74,10 +112,46 @@ export function generateNavigableBaselineRoute(
     navigableNodes,
   )
 
-  return findShortestPath(
+  const nearestNodeTime =
+    performance.now() - nearestNodeStart
+
+  const pathStart = performance.now()
+
+  const route = findShortestPath(
     navigableNodes,
     edges,
     startNode.id,
     endNode.id,
   )
+
+  const pathTime =
+    performance.now() - pathStart
+
+  console.log(
+    'TIDAL navigation timing:',
+    {
+      grid: gridTime,
+      filtering: filteringTime,
+      graph: graphTime,
+      nearestNodes: nearestNodeTime,
+      shortestPath: pathTime,
+      total:
+        gridTime +
+        filteringTime +
+        graphTime +
+        nearestNodeTime +
+        pathTime,
+    },
+  )
+
+  console.log(
+    'Baseline route result:',
+    route
+      ? `Found (${route.points.length} points)`
+      : 'No Route',
+  )
+
+  return route
 }
+
+

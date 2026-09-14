@@ -7,6 +7,11 @@ import type { Location } from './domain/location'
 import type { PlaceSearchResult } from './location/placeSearch'
 import { placeSearchService } from './location/placeSearchService'
 
+//calc voyage
+import type { NavigableBaselineRouteAnalysis } from './computation/navigableBaselineRouteAnalysis'
+import { calculateVoyage } from './features/navigation/calculateVoyage' 
+
+
 function App() {
   const [
     cursorCoordinate,
@@ -26,6 +31,16 @@ function App() {
 
   const [destination, setDestination] =
     useState<Location | null>(null)
+
+
+//voyage STATE
+  const [voyageResult , setVoyageResult] = useState<NavigableBaselineRouteAnalysis | null>(null)
+
+  const [isCalculating , setIsCalculating] = useState(false)
+
+
+
+
 
   const [
     coordinateInput,
@@ -166,7 +181,7 @@ function App() {
     setCoordinateInput(result.name)
   }
 
- function handleSetOrigin() {
+ function handleSetOrigin() {   //to set origin
   console.log('SET ORIGIN CLICKED')
 
   if (!selectedLocation) {
@@ -177,9 +192,10 @@ function App() {
   console.log('SETTING ORIGIN:', selectedLocation)
 
   setOrigin(selectedLocation)
+  setVoyageResult(null)
 }
 
-function handleSetDestination() {
+function handleSetDestination() {    //to set destination
   console.log('SET DESTINATION CLICKED')
 
   if (!selectedLocation) {
@@ -192,20 +208,33 @@ function handleSetDestination() {
   )
 
   setDestination(selectedLocation)
+  setVoyageResult(null)
 }
   
 
-function handleRemoveOrigin() {
+function handleRemoveOrigin() {  //to remove origin pt.
   setOrigin(null)
   setSelectedLocation(null)
+  setVoyageResult(null)
 }
 
-function handleRemoveDestination() {
+function handleRemoveDestination() {  //to remove destination pt.
   setDestination(null)
   setSelectedLocation(null)
+  setVoyageResult(null)
 }
 
-
+//voyag calculation handler  
+const handleCalculateRoute = async () => {
+  if (!origin || !destination) 
+    return setIsCalculating(true)
+  
+  try{
+    const result = await calculateVoyage(origin.coordinate, destination.coordinate ,)
+    setVoyageResult(result)
+  }
+  finally { setIsCalculating(false)  }
+}
 
 
 
@@ -352,6 +381,7 @@ function handleRemoveDestination() {
         destination={destination}
         onRemoveOrigin={handleRemoveOrigin}
         onRemoveDestination={handleRemoveDestination}
+        route={voyageResult?.route ?? null}
       />
 
 
@@ -490,7 +520,10 @@ function handleRemoveDestination() {
               </span>
 
               <span className="tidal-data">
-                Awaiting calculation
+                {isCalculating
+                  ? 'Calculating route' : voyageResult
+                  ? 'Route calculated' : 'Awaiting calculation'
+                   }
               </span>
             </div>
 
@@ -504,7 +537,14 @@ function handleRemoveDestination() {
               </span>
             </div>
           </div>
-        </aside>
+          { !isCalculating && !voyageResult && ( 
+             <button 
+                  className="tidal-route-card__action"
+                  type="button"
+                  onClick={handleCalculateRoute}>
+            </button>
+            )}
+          </aside>
       )}
 
 

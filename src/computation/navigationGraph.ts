@@ -41,7 +41,7 @@ function neighbourPositions(  //8 surrounding neigbour grid posn
 
       positions.push({
         row: row + rowOffset,
-        column: column + columnOffset,
+        column: columnOffset + column,
       })
     }
   }
@@ -49,17 +49,45 @@ function neighbourPositions(  //8 surrounding neigbour grid posn
   return positions
 }
 
-function edgeIsNavigable( //check edge againt cosntr
+//checkin grapgh edge against constr=land?
+
+function edgeIsNavigable(
   from: NavigationNode,
   to: NavigationNode,
   constraint: GeographicConstraint,
   spacing: number,
   stats: {
     sampleCount: number
+    broadPhaseSkipped: number
+    exactValidationCount: number
   },
 ): boolean {
   const route: Route = {
     points: [from.coordinate, to.coordinate],
+  }
+
+  const cost = distanceBetween(
+    from.coordinate,
+    to.coordinate,
+  )
+
+  if (
+    'mayIntersectLand' in constraint &&
+    typeof constraint.mayIntersectLand === 'function'
+  ) {
+    const mayIntersectLand =
+      constraint.mayIntersectLand(
+        from.coordinate,
+        to.coordinate,
+        cost,
+      )
+
+    if (!mayIntersectLand) {
+      stats.broadPhaseSkipped++
+      return true
+    }
+
+    stats.exactValidationCount++
   }
 
   return (
@@ -94,6 +122,8 @@ export function buildNavigationGraph(  //
   const stats = {
     sampleCount: 0,
     validationTime: 0,
+    broadPhaseSkipped: 0,
+    exactValidationCount: 0,
   }
 
   for (const node of nodes) {
@@ -161,7 +191,6 @@ export function buildNavigationGraph(  //
       })
     }
   }
-
   // Show total geographic samples after graph construction.
   console.log(
     'Total geographic samples:',
@@ -173,6 +202,18 @@ export function buildNavigationGraph(  //
     'Total geographic validation time:',
     stats.validationTime,
     'ms',
+  )
+
+  // Show how many edges were accepted by the broad phase.
+  console.log(
+    'Broad-phase skipped exact validation:',
+    stats.broadPhaseSkipped,
+  )
+
+  // Show how many edges required exact geographic validation.
+  console.log(
+    'Exact geographic validations:',
+    stats.exactValidationCount,
   )
 
   return edges
