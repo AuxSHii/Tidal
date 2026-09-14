@@ -66,29 +66,52 @@ function edgeIsNavigable(
     points: [from.coordinate, to.coordinate],
   }
 
-  const cost = distanceBetween(
-    from.coordinate,
-    to.coordinate,
-  )
+ 
 
   if (
-    'mayIntersectLand' in constraint &&
-    typeof constraint.mayIntersectLand === 'function'
+    'hasLandCandidateInBounds' in constraint &&
+    typeof constraint.hasLandCandidateInBounds ===
+      'function'
   ) {
-    const mayIntersectLand =
-      constraint.mayIntersectLand(
-        from.coordinate,
-        to.coordinate,
-        cost,
+    const minLatitude =
+      Math.min(
+        from.coordinate.latitude,
+        to.coordinate.latitude,
       )
 
-    if (!mayIntersectLand) {
+    const maxLatitude =
+      Math.max(
+        from.coordinate.latitude,
+        to.coordinate.latitude,
+      )
+
+    const minLongitude =
+      Math.min(
+        from.coordinate.longitude,
+        to.coordinate.longitude,
+      )
+
+    const maxLongitude =
+      Math.max(
+        from.coordinate.longitude,
+        to.coordinate.longitude,
+      )
+
+    const hasCandidate =
+      constraint.hasLandCandidateInBounds(
+        minLongitude,
+        minLatitude,
+        maxLongitude,
+        maxLatitude,
+      )
+
+    if (!hasCandidate) {
       stats.broadPhaseSkipped++
       return true
     }
-
-    stats.exactValidationCount++
   }
+
+  stats.exactValidationCount++
 
   return (
     validateRouteAgainstConstraint(
@@ -99,6 +122,10 @@ function edgeIsNavigable(
     ) === null
   )
 }
+
+
+
+
 
 export function buildNavigationGraph(  //
   nodes: NavigationNode[],

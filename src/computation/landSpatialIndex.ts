@@ -181,6 +181,34 @@ export class LandSpatialIndex {
       (item) => item.polygon,
     )
   }
+  
+  searchBounds(
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number,
+): Polygon[] {
+  const candidates =
+    this.index.search({
+      minX,
+      minY,
+      maxX,
+      maxY,
+    })
+
+  this.candidateCount +=
+    candidates.length
+
+  return candidates.map(
+    (item) => item.polygon,
+  )
+}
+
+
+  
+
+
+
 
     hasCandidateInBounds(
     minX: number,
