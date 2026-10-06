@@ -48,7 +48,7 @@ function neighbourPositions(
 
       positions.push({
         row: row + rowOffset,
-        column: column + columnOffset,
+        column: columnOffset + column,
       })
     }
   }
@@ -64,6 +64,8 @@ function edgeIsNavigable(
 
   stats: {
     sampleCount: number
+    samplingTime: number
+    constraintTime: number
     broadPhaseSkipped: number
     broadPhaseTime: number
     rasterCertified: number
@@ -184,6 +186,8 @@ export function buildNavigationGraph(
 
   const stats = {
     sampleCount: 0,
+    samplingTime: 0,
+    constraintTime: 0,
     validationTime: 0,
     broadPhaseSkipped: 0,
     broadPhaseTime: 0,
@@ -277,6 +281,18 @@ export function buildNavigationGraph(
   console.log(
     'Total geographic validation time:',
     stats.validationTime,
+    'ms',
+  )
+
+  console.log(
+    'Sampling time:',
+    stats.samplingTime,
+    'ms',
+  )
+
+  console.log(
+    'Constraint time:',
+    stats.constraintTime,
     'ms',
   )
 

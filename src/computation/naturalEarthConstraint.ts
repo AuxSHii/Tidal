@@ -6,7 +6,7 @@ import type { MultiPolygon } from '../domain/geography/multiPolygon'
 import { LandSpatialIndex } from './landSpatialIndex'
 import { NaturalEarthNavigationLandMask } from './navigationLandMask'
 
-// interface for candidates[optimization add-ons!]
+// Interface for candidate broad-phase checks.
 export interface GeographicCandidateConstraint {
   hasLandCandidateInBounds(
     minLongitude: number,
@@ -15,8 +15,6 @@ export interface GeographicCandidateConstraint {
     maxLatitude: number,
   ): boolean
 }
-
-// interface for constraint
 
 export class NaturalEarthLandConstraint
   implements
@@ -33,38 +31,6 @@ export class NaturalEarthLandConstraint
     Feature<TurfPolygon>
   >()
 
-  // for getting a safe check
-  /*
-  mayIntersectLand(
-    minLongitude: number,
-    minLatitude: number,
-    maxLongitude: number,
-    maxLatitude: number,
-  ): boolean {
-    return this.spatialIndex.hasCandidateInBounds(
-      minLongitude,
-      minLatitude,
-      maxLongitude,
-      maxLatitude,
-    )
-  }
-  */
-
-  // method for landcandidatbounds
-  hasLandCandidateInBounds(
-    minLongitude: number,
-    minLatitude: number,
-    maxLongitude: number,
-    maxLatitude: number,
-  ): boolean {
-    return this.spatialIndex.hasCandidateInBounds(
-      minLongitude,
-      minLatitude,
-      maxLongitude,
-      maxLatitude,
-    )
-  }
-
   // Remember geographic results for coordinates already checked.
   private readonly allowedCache = new Map<
     string,
@@ -78,11 +44,30 @@ export class NaturalEarthLandConstraint
       import('../domain/geography/polygon').Polygon[]
     >()
 
+  // Total time spent in the 0.5° navigation land mask.
+  private navigationLandMaskTime = 0
+
+  // Total time spent looking up coordinates in the result cache.
+  private allowedCacheTime = 0
+
+  // Total time spent preparing/finding cell candidates.
+  private candidateLookupTime = 0
+
+  // Total time spent iterating candidate polygons,
+  // including Turf calls.
+  private candidateCheckTime = 0
+
   // Total time spent searching the RBush index.
   private rbushTime = 0
 
   // Total time spent running Turf point-in-polygon checks.
   private turfTime = 0
+
+  private allowedCacheHits = 0
+  private allowedCacheMisses = 0
+
+  private cellCandidateCacheHits = 0
+  private cellCandidateCacheMisses = 0
 
   constructor(land: MultiPolygon) {
     this.spatialIndex =
@@ -114,7 +99,20 @@ export class NaturalEarthLandConstraint
     }
   }
 
-  // Create a stable key for a geographic coordinate.
+  hasLandCandidateInBounds(
+    minLongitude: number,
+    minLatitude: number,
+    maxLongitude: number,
+    maxLatitude: number,
+  ): boolean {
+    return this.spatialIndex.hasCandidateInBounds(
+      minLongitude,
+      minLatitude,
+      maxLongitude,
+      maxLatitude,
+    )
+  }
+
   private coordinateKey(
     coordinate: Coordinate,
   ): string {
@@ -131,7 +129,6 @@ export class NaturalEarthLandConstraint
     return `${longitude}:${latitude}`
   }
 
-  // Create a key for the 0.5° navigation cell.
   private cellKey(
     coordinate: Coordinate,
   ): string {
@@ -171,15 +168,14 @@ export class NaturalEarthLandConstraint
 
       maxLongitude:
         -180 + (column + 1) * cellSize,
-
       minLatitude:
         -90 + row * cellSize,
-        maxLatitude:
+
+      maxLatitude:
         -90 + (row + 1) * cellSize,
     }
   }
 
-  // edge validation
   mayIntersectLand(
     from: Coordinate,
     to: Coordinate,
@@ -193,9 +189,6 @@ export class NaturalEarthLandConstraint
     const angularDegrees =
       (angularDistance * 180) / Math.PI
 
-    // Use a much tighter geographic envelope around
-    // the actual segment instead of expanding by the
-    // full segment distance on every side.
     const latitudePadding =
       angularDegrees / 2
 
@@ -269,7 +262,6 @@ export class NaturalEarthLandConstraint
       )
     }
 
-    // Antimeridian crossing.
     return (
       this.spatialIndex.hasCandidateInBounds(
         minLongitude,
@@ -289,10 +281,17 @@ export class NaturalEarthLandConstraint
   isAllowed(
     coordinate: Coordinate,
   ): boolean {
+    const navigationLandMaskStart =
+      performance.now()
+
     const state =
       this.navigationLandMask.getState(
         coordinate,
       )
+
+    this.navigationLandMaskTime +=
+      performance.now() -
+      navigationLandMaskStart
 
     if (state === 'ocean') {
       return true
@@ -301,13 +300,23 @@ export class NaturalEarthLandConstraint
     const key =
       this.coordinateKey(coordinate)
 
-    // Reuse the previous geographic result when possible.
+    const allowedCacheStart =
+      performance.now()
+
     const cached =
       this.allowedCache.get(key)
 
+    this.allowedCacheTime +=
+      performance.now() -
+      allowedCacheStart
+
     if (cached !== undefined) {
+      this.allowedCacheHits++
+
       return cached
     }
+
+    this.allowedCacheMisses++
 
     const point = {
       type: 'Point' as const,
@@ -317,8 +326,9 @@ export class NaturalEarthLandConstraint
       ],
     }
 
-    // Reuse RBush candidates for coordinates
-    // inside the same 0.5° navigation cell.
+    const candidateLookupStart =
+      performance.now()
+
     const cellKey =
       this.cellKey(coordinate)
 
@@ -328,10 +338,11 @@ export class NaturalEarthLandConstraint
       )
 
     if (candidates === undefined) {
+      this.cellCandidateCacheMisses++
+
       const bounds =
         this.cellBounds(coordinate)
 
-      // Measure the spatial-index lookup.
       const rbushStart =
         performance.now()
 
@@ -351,7 +362,16 @@ export class NaturalEarthLandConstraint
         cellKey,
         candidates,
       )
+    } else {
+      this.cellCandidateCacheHits++
     }
+
+    this.candidateLookupTime +=
+      performance.now() -
+      candidateLookupStart
+
+    const candidateCheckStart =
+      performance.now()
 
     for (const polygon of candidates) {
       const feature =
@@ -362,8 +382,6 @@ export class NaturalEarthLandConstraint
           'Natural Earth polygon feature not prepared',
         )
       }
-
-      // Measure the exact polygon check.
       const turfStart =
         performance.now()
 
@@ -376,7 +394,12 @@ export class NaturalEarthLandConstraint
       this.turfTime +=
         performance.now() -
         turfStart
-        if (inside) {
+
+      if (inside) {
+        this.candidateCheckTime +=
+          performance.now() -
+          candidateCheckStart
+
         this.allowedCache.set(
           key,
           false,
@@ -386,6 +409,10 @@ export class NaturalEarthLandConstraint
       }
     }
 
+    this.candidateCheckTime +=
+      performance.now() -
+      candidateCheckStart
+
     this.allowedCache.set(
       key,
       true,
@@ -394,18 +421,47 @@ export class NaturalEarthLandConstraint
     return true
   }
 
-  // Return total RBush candidate count.
   getCandidateCount(): number {
     return this.spatialIndex.getCandidateCount()
   }
 
-  // Return total time spent searching RBush.
   getRbushTime(): number {
     return this.rbushTime
   }
 
-  // Return total time spent in Turf point-in-polygon.
   getTurfTime(): number {
     return this.turfTime
+  }
+
+  getNavigationLandMaskTime(): number {
+    return this.navigationLandMaskTime
+  }
+
+  getAllowedCacheTime(): number {
+    return this.allowedCacheTime
+  }
+
+  getCandidateLookupTime(): number {
+    return this.candidateLookupTime
+  }
+
+  getCandidateCheckTime(): number {
+    return this.candidateCheckTime
+  }
+
+  getAllowedCacheHits(): number {
+    return this.allowedCacheHits
+  }
+
+  getAllowedCacheMisses(): number {
+    return this.allowedCacheMisses
+  }
+
+  getCellCandidateCacheHits(): number {
+    return this.cellCandidateCacheHits
+  }
+
+  getCellCandidateCacheMisses(): number {
+    return this.cellCandidateCacheMisses
   }
 }

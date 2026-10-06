@@ -6,9 +6,7 @@ import { filterNavigableNodes } from './navigationNodes'
 import { buildNavigationGraph } from './navigationGraph'
 import { findShortestPath } from './navigationPath'
 import { distanceBetween } from './geography'
-import  type { NavigationGeographyData } from './navigationGeography'
-
-
+import type { NavigationGeographyData } from './navigationGeography'
 
 function findNearestNode(
   coordinate: Coordinate,
@@ -68,7 +66,8 @@ export function generateNavigableBaselineRoute(
     constraint,
     navigationGeography,
   )
-console.log(
+
+  console.log(
     'Geographic candidate count:',
     'getCandidateCount' in constraint &&
       typeof constraint.getCandidateCount === 'function'
@@ -92,6 +91,69 @@ console.log(
       : 'unavailable',
   )
 
+  console.log(
+    'Navigation land mask time:',
+    'getNavigationLandMaskTime' in constraint &&
+      typeof constraint.getNavigationLandMaskTime === 'function'
+      ? constraint.getNavigationLandMaskTime()
+      : 'unavailable',
+  )
+
+  console.log(
+    'Allowed cache:',
+    {
+      hits:
+        'getAllowedCacheHits' in constraint &&
+        typeof constraint.getAllowedCacheHits === 'function'
+          ? constraint.getAllowedCacheHits()
+          : 'unavailable',
+
+      misses:
+        'getAllowedCacheMisses' in constraint &&
+        typeof constraint.getAllowedCacheMisses === 'function'
+          ? constraint.getAllowedCacheMisses()
+          : 'unavailable',
+
+      time:
+        'getAllowedCacheTime' in constraint &&
+        typeof constraint.getAllowedCacheTime === 'function'
+          ? constraint.getAllowedCacheTime()
+          : 'unavailable',
+    },
+  )
+
+  console.log(
+    'Cell candidate cache:',
+    {
+      hits:
+        'getCellCandidateCacheHits' in constraint &&
+        typeof constraint.getCellCandidateCacheHits === 'function'
+          ? constraint.getCellCandidateCacheHits()
+          : 'unavailable',
+
+      misses:
+        'getCellCandidateCacheMisses' in constraint &&
+        typeof constraint.getCellCandidateCacheMisses === 'function'
+          ? constraint.getCellCandidateCacheMisses()
+          : 'unavailable',
+    },
+  )
+
+  console.log(
+    'Candidate lookup time:',
+    'getCandidateLookupTime' in constraint &&
+      typeof constraint.getCandidateLookupTime === 'function'
+      ? constraint.getCandidateLookupTime()
+      : 'unavailable',
+  )
+
+  console.log(
+    'Candidate check time:',
+    'getCandidateCheckTime' in constraint &&
+      typeof constraint.getCandidateCheckTime === 'function'
+      ? constraint.getCandidateCheckTime()
+      : 'unavailable',
+  )
   const filteringTime =
     performance.now() - filteringStart
 
@@ -153,11 +215,9 @@ console.log(
   console.log(
     'Baseline route result:',
     route
-      ? `Found (${route.points.length} points)`
+      ?` Found (${route.points.length} points)`
       : 'No Route',
   )
 
   return route
 }
-
-
