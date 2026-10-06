@@ -7,6 +7,6 @@ export type LocationSource =
 
 export interface Location {
 	coordinate: Coordinate
-	name?: String
+	name?: string
 	source: LocationSource
 }

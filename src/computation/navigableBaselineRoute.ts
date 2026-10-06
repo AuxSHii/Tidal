@@ -6,6 +6,9 @@ import { filterNavigableNodes } from './navigationNodes'
 import { buildNavigationGraph } from './navigationGraph'
 import { findShortestPath } from './navigationPath'
 import { distanceBetween } from './geography'
+import  type { NavigationGeographyData } from './navigationGeography'
+
+
 
 function findNearestNode(
   coordinate: Coordinate,
@@ -45,6 +48,7 @@ export function generateNavigableBaselineRoute(
   constraint: GeographicConstraint,
   spacing: number = 10000,
   paddingCells: number = 5,
+  navigationGeography: NavigationGeographyData,
 ): Route | null {
   const gridStart = performance.now()
 
@@ -62,6 +66,7 @@ export function generateNavigableBaselineRoute(
   const navigableNodes = filterNavigableNodes(
     nodes,
     constraint,
+    navigationGeography,
   )
 console.log(
     'Geographic candidate count:',
@@ -96,6 +101,7 @@ console.log(
     navigableNodes,
     constraint,
     spacing,
+    navigationGeography,
   )
 
   const graphTime = performance.now() - graphStart

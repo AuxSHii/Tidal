@@ -5,12 +5,19 @@ import type { Route } from '../domain/route'
 import { distanceBetween } from './geography'
 import { validateRouteAgainstConstraint } from './geographicConstraint'
 
+import {
+  classifyGeodesicEdgeWithRaster,
+  getNavigationRasterTiming,
+} from './navigationRasterEdge'
+
+import type { NavigationGeographyData } from './navigationGeography'
+
 interface GridPosition {
   row: number
   column: number
 }
 
-function parseNodeId(id: string) {  //take id and return grid posn
+function parseNodeId(id: string) {
   const match = /^grid-(\d+)-(\d+)$/.exec(id)
 
   if (!match) {
@@ -23,7 +30,7 @@ function parseNodeId(id: string) {  //take id and return grid posn
   }
 }
 
-function neighbourPositions(  //8 surrounding neigbour grid posn
+function neighbourPositions(
   row: number,
   column: number,
 ): GridPosition[] {
@@ -41,7 +48,7 @@ function neighbourPositions(  //8 surrounding neigbour grid posn
 
       positions.push({
         row: row + rowOffset,
-        column: columnOffset + column,
+        column: column + columnOffset,
       })
     }
   }
@@ -49,24 +56,41 @@ function neighbourPositions(  //8 surrounding neigbour grid posn
   return positions
 }
 
-//checkin grapgh edge against constr=land?
-
 function edgeIsNavigable(
   from: NavigationNode,
   to: NavigationNode,
   constraint: GeographicConstraint,
   spacing: number,
+
   stats: {
     sampleCount: number
     broadPhaseSkipped: number
+    broadPhaseTime: number
+    rasterCertified: number
     exactValidationCount: number
+    exactValidationTime: number
   },
+  navigationGeography: NavigationGeographyData,
 ): boolean {
   const route: Route = {
     points: [from.coordinate, to.coordinate],
   }
 
- 
+  const rasterResult =
+    classifyGeodesicEdgeWithRaster(
+      from.coordinate,
+      to.coordinate,
+      navigationGeography,
+    )
+
+  if (
+    rasterResult ===
+    'CERTIFIED_OCEAN'
+  ) {
+    stats.rasterCertified++
+
+    return true
+  }
 
   if (
     'hasLandCandidateInBounds' in constraint &&
@@ -97,6 +121,9 @@ function edgeIsNavigable(
         to.coordinate.longitude,
       )
 
+    const broadPhaseStart =
+      performance.now()
+
     const hasCandidate =
       constraint.hasLandCandidateInBounds(
         minLongitude,
@@ -105,32 +132,42 @@ function edgeIsNavigable(
         maxLatitude,
       )
 
+    stats.broadPhaseTime +=
+      performance.now() -
+      broadPhaseStart
+
     if (!hasCandidate) {
       stats.broadPhaseSkipped++
+
       return true
     }
   }
 
   stats.exactValidationCount++
 
-  return (
+  const exactValidationStart =
+    performance.now()
+
+  const violation =
     validateRouteAgainstConstraint(
       route,
       constraint,
       spacing,
       stats,
-    ) === null
-  )
+    )
+
+  stats.exactValidationTime +=
+    performance.now() -
+    exactValidationStart
+
+  return violation === null
 }
 
-
-
-
-
-export function buildNavigationGraph(  //
+export function buildNavigationGraph(
   nodes: NavigationNode[],
   constraint: GeographicConstraint,
   spacing: number,
+  navigationGeography: NavigationGeographyData,
 ): NavigationEdge[] {
   const nodeMap = new Map<string, NavigationNode>()
 
@@ -145,12 +182,14 @@ export function buildNavigationGraph(  //
 
   const edges: NavigationEdge[] = []
 
-  // Count samples and validation time.
   const stats = {
     sampleCount: 0,
     validationTime: 0,
     broadPhaseSkipped: 0,
+    broadPhaseTime: 0,
+    rasterCertified: 0,
     exactValidationCount: 0,
+    exactValidationTime: 0,
   }
 
   for (const node of nodes) {
@@ -182,29 +221,35 @@ export function buildNavigationGraph(  //
         continue
       }
 
-      const validationStart = performance.now()
+      const validationStart =
+        performance.now()
 
-      const navigable = edgeIsNavigable(
-        node,
-        target,
-        constraint,
-        spacing,
-        stats,
-      )
+      const navigable =
+        edgeIsNavigable(
+          node,
+          target,
+          constraint,
+          spacing,
+          stats,
+          navigationGeography,
+        )
 
       stats.validationTime +=
-        performance.now() - validationStart
+        performance.now() -
+        validationStart
 
       if (!navigable) {
         continue
       }
 
-      const cost = distanceBetween(
-        node.coordinate,
-        target.coordinate,
-      )
+      const cost =
+        distanceBetween(
+          node.coordinate,
+          target.coordinate,
+        )
 
-      // Geography is symmetric, but edges stay directed.
+      // Geography is symmetric,
+      // but edges are directed.
       edges.push({
         from: node,
         to: target,
@@ -218,26 +263,45 @@ export function buildNavigationGraph(  //
       })
     }
   }
-  // Show total geographic samples after graph construction.
+
+  console.log(
+    'Raster timing:',
+    getNavigationRasterTiming(),
+  )
+
   console.log(
     'Total geographic samples:',
     stats.sampleCount,
   )
 
-  // Show time spent checking geographic constraints.
   console.log(
     'Total geographic validation time:',
     stats.validationTime,
     'ms',
   )
 
-  // Show how many edges were accepted by the broad phase.
+  console.log(
+    'Broad-phase time:',
+    stats.broadPhaseTime,
+    'ms',
+  )
+
+  console.log(
+    'Exact validation time:',
+    stats.exactValidationTime,
+    'ms',
+  )
+
+  console.log(
+    'Raster-certified ocean edges:',
+    stats.rasterCertified,
+  )
+
   console.log(
     'Broad-phase skipped exact validation:',
     stats.broadPhaseSkipped,
   )
 
-  // Show how many edges required exact geographic validation.
   console.log(
     'Exact geographic validations:',
     stats.exactValidationCount,

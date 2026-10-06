@@ -59,37 +59,58 @@ export interface RouteConstraintViolation {  //route validation against constrai
   coordinate: Coordinate
 }
 
-export function validateRouteAgainstConstraint(   //fxn to validate given route agains a constr and spacing
+export function validateRouteAgainstConstraint(
   route: Route,
   constraint: GeographicConstraint,
   spacing: number,
-  stats? :{ sampleCount: number },
+  stats?: {
+    sampleCount: number
+    samplingTime: number
+    constraintTime: number
+  },
 ): RouteConstraintViolation | null {
-  const segments = routeSegments(route)    //route-: indiv segment
+  const segments = routeSegments(route)
 
   for (
-    let segmentIndex = 0;             //check every segment along geodesic line 
+    let segmentIndex = 0;
     segmentIndex < segments.length;
     segmentIndex++
   ) {
+    const samplingStart =
+      performance.now()
+
     const samples = sampleGeodesic(
       segments[segmentIndex],
       spacing,
     )
 
-  if(stats) {
-    stats.sampleCount += samples.length
-  }
+    if (stats) {
+      stats.sampleCount += samples.length
+
+      stats.samplingTime +=
+        performance.now() - samplingStart
+    }
 
     for (const coordinate of samples) {
-      if (!constraint.isAllowed(coordinate)) {
+      const constraintStart =
+        performance.now()
+
+      const allowed =
+        constraint.isAllowed(coordinate)
+
+      if (stats) {
+        stats.constraintTime +=
+          performance.now() - constraintStart
+      }
+
+      if (!allowed) {
         return {
-          segmentIndex,          //voilation
+          segmentIndex,
           coordinate,
         }
       }
     }
   }
 
-  return null                       //pass
+  return null
 }

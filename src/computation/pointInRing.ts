@@ -47,7 +47,7 @@ export function pointInRing(
           previous.longitude,
         )
 
-      let longitudeDifference =
+      const longitudeDifference =
         currentLongitude -
         previousLongitude
 

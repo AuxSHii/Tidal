@@ -6,6 +6,9 @@ import type { Route } from '../domain/route'
 import { evaluateRoute } from './routeAnalysis'
 import { generateNavigableBaselineRoute } from './navigableBaselineRoute'
 
+import type { NavigationGeographyData } from './navigationGeography'
+
+
 export interface NavigableBaselineRouteAnalysis {
   route: Route
   metrics: RouteMetrics
@@ -18,6 +21,7 @@ export function evaluateNavigableBaselineRoute(
   constraint: GeographicConstraint,
   spacing: number = 10000,
   paddingCells: number = 5,
+  navigationGeography: NavigationGeographyData,
 ): NavigableBaselineRouteAnalysis | null {
   const route =
     generateNavigableBaselineRoute(
@@ -26,6 +30,7 @@ export function evaluateNavigableBaselineRoute(
       constraint,
       spacing,
       paddingCells,
+      navigationGeography,
     )
 
   if (route === null) {
