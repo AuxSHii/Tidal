@@ -1,14 +1,16 @@
-#tidal
+# tidal
 
 tidal is a web app , i am developing ;
 goal: to eventually calculate realistic marine vessel routes over earth while accounting for geographic constraints,
 vessel characterstic, ocean condition etc
 
+<img width="1366" height="768" alt="8 path" src="https://github.com/user-attachments/assets/a390aa69-90ad-441e-ad8c-aed4a8706409" />
 
 
 can search or select co-ordinates by cursor , it uses an external geoapify api
 select origin and destination , then 
 calculate teh shortest marine route between them.
+<img width="1366" height="768" alt="7" src="https://github.com/user-attachments/assets/2397d8e5-5e15-4ff5-9897-50228118fb9a" />
 
 
 its still under active dev. currently focusing on building a solid geographic and routing foundation before adding any complex or real time environment data
@@ -41,6 +43,11 @@ The current routing system is intentionally more concerned with geographic corre
 8. route rendering [if found]
 
 note: when raster cannot certify an edge as open ocean ,  it falls back to natural earth geometry's "exact validations" which is implemented.
+
+<img width="738" height="695" alt="testing" src="https://github.com/user-attachments/assets/a0889c7b-6ebd-473a-a8e6-ef05886ffa79" />
+
+<img width="855" height="710" alt="co-ord static bin testing" src="https://github.com/user-attachments/assets/7fa65f85-1880-4f5c-91d8-3fcac8ea3f9d" />
+
 
 ##raster:
   its a grid that divides a geographic space into small cells with each cell string a value represneting whats there[cell definition]
@@ -85,6 +92,9 @@ tidal's compiled global navigation raster
   LAND: 2,080,029
   COAST: 124,569
   ```
+
+<img width="1366" height="768" alt="builded static geograpgy model" src="https://github.com/user-attachments/assets/c4e974ad-0abf-43e9-94d8-2971d805e974" />
+
  with 0: unknow cells [see in screenshot]
 
  ##performace:
