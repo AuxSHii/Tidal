@@ -28,38 +28,17 @@ export type NavigationRasterEdgeResult =
   | 'CERTIFIED_OCEAN'
   | 'NEEDS_EXACT_VALIDATION'
 
-
-  
-/*
- * The derived mask stores whether a cell's complete
- * 3x3 neighbourhood is OCEAN.
- *
- * This is exactly the condition previously evaluated
- * by neighbourhoodIsOcean(), but precomputed once
- * instead of checking 9 raster cells for every sample.
- */
-/*const certifiedOceanMasks =
-  new WeakMap<
-    NavigationGeographyData,
-    Uint8Array
-  >() */
-
-  let rasterInverseTime = 0
 let rasterInverseLineTime = 0
 let rasterPositionTime = 0
 let rasterNeighbourhoodTime = 0
 
 export function getNavigationRasterTiming() {
   return {
-    inverse: rasterInverseTime,
     inverseLine: rasterInverseLineTime,
     position: rasterPositionTime,
     neighbourhood: rasterNeighbourhoodTime,
   }
 }
-
-
-
 
 function requireValue(
   value: number | undefined,
@@ -117,10 +96,9 @@ function cellIsOcean(
   )
 }
 
-
 /*
- * Check the precomputed conservative
- * neighbourhood classification for one
+ * Check the conservative
+ * 3x3 neighbourhood classification for one
  * geodesic position.
  */
 
@@ -169,15 +147,13 @@ function neighbourhoodIsOcean(
   return true
 }
 
-
-
-
 /*
  * Return the number of samples represented
  * by the requested physical distance.
  *
  * Sampling density is intentionally unchanged.
  */
+
 function sampleCount(
   distance: number,
 ): number {
@@ -207,65 +183,57 @@ function sampleCount(
  * NEEDS_EXACT_VALIDATION means the caller must
  * continue to Natural Earth geometry.
  */
+
 export function classifyGeodesicEdgeWithRaster(
   from: Coordinate,
   to: Coordinate,
   data: NavigationGeographyData,
 ): NavigationRasterEdgeResult {
+  const inverseLineStart =
+    performance.now()
 
+  /*
+   * InverseLine() performs the inverse geodesic
+   * solution internally and gives us the complete
+   * geodesic line.
+   *
+   * The line's s13 is the distance to the
+   * destination, so no separate Inverse() call
+   * is necessary.
+   */
+  const line =
+    WGS84.InverseLine(
+      from.latitude,
+      from.longitude,
+      to.latitude,
+      to.longitude,
+    )
 
-const inverseStart =
-  performance.now()
+  rasterInverseLineTime +=
+    performance.now() -
+    inverseLineStart
 
-const inverse =
-  WGS84.Inverse(
-    from.latitude,
-    from.longitude,
-    to.latitude,
-    to.longitude,
-  )
+  const distance =
+    requireValue(
+      line.s13,
+      'distance',
+    )
 
-rasterInverseTime +=
-  performance.now() -
-  inverseStart
+  if (
+    distance === 0
+  ) {
+    return neighbourhoodIsOcean(
+      data,
+      from,
+    )
+      ? 'CERTIFIED_OCEAN'
+      : 'NEEDS_EXACT_VALIDATION'
+  }
 
-const distance =
-  requireValue(
-    inverse.s12,
-    'distance',
-  )
-
-if (
-  distance === 0
-) {
-  return neighbourhoodIsOcean(
-    data,
-    from,
-  )
-    ? 'CERTIFIED_OCEAN'
-    : 'NEEDS_EXACT_VALIDATION'
-}
-
-const inverseLineStart =
-  performance.now()
-
-const line =
-  WGS84.InverseLine(
-    from.latitude,
-    from.longitude,
-    to.latitude,
-    to.longitude,
-  )
-
-rasterInverseLineTime +=
-  performance.now() -
-  inverseLineStart
-
-const count =
-  sampleCount(
-    distance,
-  )
-
+  const count =
+    sampleCount(
+      distance,
+    )
 
   /*
    * Always inspect both endpoints and the
@@ -285,7 +253,7 @@ const count =
       ) /
       count
 
-const positionStart =
+    const positionStart =
       performance.now()
 
     const position =
@@ -296,9 +264,6 @@ const positionStart =
     rasterPositionTime +=
       performance.now() -
       positionStart
-
-
-
 
     const coordinate: Coordinate = {
       latitude:
@@ -313,7 +278,7 @@ const positionStart =
         ),
     }
 
-const neighbourhoodStart =
+    const neighbourhoodStart =
       performance.now()
 
     const ocean =
@@ -327,11 +292,9 @@ const neighbourhoodStart =
       neighbourhoodStart
 
     if (!ocean) {
-
       return 'NEEDS_EXACT_VALIDATION'
     }
   }
 
   return 'CERTIFIED_OCEAN'
 }
-
