@@ -4,6 +4,13 @@ tidal is a web app , i am developing ;
 goal: to eventually calculate realistic marine vessel routes over earth while accounting for geographic constraints,
 vessel characterstic, ocean condition etc
 
+
+
+can search or select co-ordinates by cursor , it uses an external geoapify api
+select origin and destination , then 
+calculate teh shortest marine route between them.
+
+
 its still under active dev. currently focusing on building a solid geographic and routing foundation before adding any complex or real time environment data
 
 ##What it does?
