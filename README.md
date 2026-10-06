@@ -101,7 +101,8 @@ tidal's compiled global navigation raster
     i spent a lot of time optimizing it .. its not there yet , current benchmarks are
    [see in screenshot]
 
-   <img width="994" height="743" alt="benchmark" src="https://github.com/user-attachments/assets/28381056-9b91-4302-bf22-a8750f2d4d46" />
+  <img width="1120" height="744" alt="latest bechmark" src="https://github.com/user-attachments/assets/50ac5512-3776-4548-a5d9-850b1954b7a1" />
+
 
 ##future:
    1. major parts are to intoduce vessels , fuel models , ports varaiables based on access
