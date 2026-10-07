@@ -66,7 +66,7 @@ tidal's compiled global navigation raster
   its generated from Natural Earth land geometry[geojson] rather then being created manualyy
   COMPILER : uses polygon boundary rasterization and scanline filling to construct the global/land classification.
 
- ##Geographic correctness
+ ## Geographic correctness
  tested raster against many geographic cases,
   like
    1. open Pacific and Atlantic ocean
@@ -107,7 +107,7 @@ tidal's compiled global navigation raster
 ## future:
    1. major parts are to intoduce vessels , fuel models , ports varaiables based on access
    2. real time env. factors
-   3. route optimizations - zermol navigations , eikonal / ordered upwind methods , multi objective routing.
+   3. route optimizations - zermolo navigations , eikonal / ordered upwind methods , multi objective routing.
 
 ## known limitations:  
    as tidal isnt finished it has limitations  like:
